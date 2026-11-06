@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: hashFiles('package.json') != ''
+        with:
+          node-version: 22
+          cache: npm
+      - name: Run test suite
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+            npm test
+          else
+            echo "::warning::No test suite yet (no package.json). Replace this once the TDD picks a stack."
+          fi
