@@ -13,7 +13,7 @@ You'll help build sketch-gallery, a web gallery for posting and browsing sketche
 
 4. **Review the PRD.** Read the PR. Comment on it, or tell Claude "I added comments, take a look," until it says what you mean. Merging the PR is your approval (gate 1). Nothing gets built before that.
 
-5. **TDD.** Tell Claude: "PRD approved; draft the TDD." It writes `docs/TDD.md` (architecture, where data lives, how each requirement is tested) and opens a PR. Same review loop; merging is gate 2. CI and hosting are already connected; right after gate 2, Claude points them at the stack the TDD picks.
+5. **TDD.** Tell Claude: "PRD approved; draft the TDD." It writes `docs/TDD.md` (architecture, where data lives, how each requirement is tested) and opens a PR. Same review loop; merging is gate 2. CI is already in place as a placeholder; right after gate 2, Claude points it at the stack the TDD picks and sets up hosting.
 
 6. **Session 0.** By prompting only: make a small change, open a PR, have a reviewer who didn't write it approve, merge it, see it deploy. About 2 hours; you'll have touched the whole pipeline.
 
