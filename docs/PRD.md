@@ -37,10 +37,6 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), 16
 12. **Add one drawing:** one command on the laptop adds a single dated JPEG, and creates the year if it is new. *Check: it is live within 5 min, in the right year and the right place; the other drawings are unchanged. This is the live demo.*
 13. **No login on the site:** viewers never log in (the site is public). The site has no upload page, so nothing on it can be changed from a browser. Changes go through the owner's laptop and GitHub, so GitHub's login is the only lock. *Check: the deployed site serves only static files: no form, no API.*
 
-### Nice to have (built last, and only if small)
-
-14. **Grid / List switch,** as on the Bezsonova gallery. The list view shows a bigger thumbnail beside the date. Without prompt words or descriptions the list adds little, so it can be dropped.
-
 ## Content: the trial's drawings
 - **Made in ChatGPT** (Luke's subscription), with Claude driving it in Luke's Chrome. The style references are two of the artist's drawings (a hand and a button) and five earlier ChatGPT results in the same style. The artist's map drawing is left out because it's a full scene with red ink. Six sources were tried side by side (Piranesi, Doré, Leonardo, Gemini, ChatGPT, drawn in code); see the [trial page](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV).
 - **Style:** one subject per drawing (an object, a building, an instrument or a person), black ink lines and hatching, no color, plain white background, no text.
@@ -77,16 +73,21 @@ Viewer accounts, comments, likes, search, analytics, selling prints, more than o
 
   The real artist picks a domain for the real site.
 - **End of a year in the pop-up:** no wraparound. The first drawing shows only a right arrow, the last only a left arrow, the rest both, so the viewer can see where the year starts and ends (feature 6). The keys do the same, and a swipe past the end bounces back.
+- **Grid / List switch:** left out of this build; moved to Future work.
 - **Auth:** covered by feature 13. The details (GitHub, Cloudflare deploy keys) go in the TDD.
 - **How to make the 160 drawings:** see Content.
 
 ## Future work (after the site is live and on hornof.org)
+Possible features to add later, if and when they're wanted. None are part of this build.
+
+**Grid / List switch,** as on the Bezsonova gallery: a switch at the top, and a list view with one bigger drawing per row beside its date. Small (about one card: a second layout, the switch, and checks in both views), but out of the first build. Without words per drawing the list adds little over the pop-up; showing each drawing's subject in the list would give it a purpose.
+
 **"Generate drawings" for the owner.** For a demo: pick a year or a date range and a number, the site makes new placeholder drawings named by date, and the owner imports them so they show up in the right year.
 
 Why it waits:
 - **A ChatGPT subscription can't be used from a website.** Plus doesn't include the OpenAI API; the API is a separate pay-as-you-go account. Third-party figures put an image at roughly $0.05 (medium quality) to $0.21 (high), so about $1.50–$6.50 for a 31-drawing year. OpenAI doesn't publish a flat price, so check it before building.
 - **It breaks feature 13.** The API key must stay secret, so the site would need server code (a Cloudflare Worker) and an owner login. Today the site is static files only, with no login.
-- **A smaller version fits the current design:** a laptop command, like bulk import (`generate --year 2027 --count 5`), that calls the API and writes dated files. That adds no server and no login, but still costs API money. A free option is what's used for the trial: Claude drives ChatGPT in the owner's Chrome. It's slow, it needs the laptop, and it's subject to the daily cap.
+- **A smaller version fits the current design:** a laptop command, like bulk import (`generate --year 2027 --count 5`), that calls the API and writes dated files. That adds no server and no login, but still costs API money. A free option is what's used for the trial: Claude drives ChatGPT in the owner's Chrome. It's slow, it needs the laptop, and ChatGPT's rate limit makes it pause every so often.
 
 ## Open questions
-4. **Grid / List switch:** keep it as a nice-to-have, or drop it?
+None. All four were answered in review (see Answered, Content and Future work).
