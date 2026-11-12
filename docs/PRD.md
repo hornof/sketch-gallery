@@ -21,7 +21,7 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), 16
 ### Viewer
 
 1. **One page.** A title ("Sketch Gallery"), the line "This gallery displays drawings made over several years.", a year menu, and the drawings. The site names no artist and no person. *Check: the page text contains no personal names.*
-2. **Year menu:** `2026 | 2025 | 2024 | 2023 | 2022 | 2021`, newest first, current year underlined. The newest year shows by default. Clicking a year **replaces** the drawings in place: no new page load, no jump down the page. *Check: clicking each year shows exactly that year's count (31, 31, 6, 31, 31, 30); the scroll position resets to the top of the grid.*
+2. **Year menu:** `2026 | 2025 | 2024 | 2023 | 2022 | 2021`, newest first, current year underlined. The newest year shows by default. Clicking a year **replaces** the drawings in place: no new page load, no jump down the page. *Check: clicking each year shows exactly that year's count (31, or 6 for 2024); the scroll position resets to the top of the grid.*
 3. **Links per year and per drawing:** each year has its own URL (`/2025/`) and each drawing too (`/2025/#7`), so hornof.org or a message can link straight to one. Back and Forward move between years and open or closed drawings. *Check: pasting each URL into a fresh tab opens that year or that drawing.*
 4. **Grid:** uniform portrait thumbnails in day order, each with its date ("October 7"). The grid has 2 columns at phone width and grows to 6 on a wide desktop. *Check: column count at 375, 768 and 1440 px is 2, 3–4 and 6.*
 5. **Pop-up viewer:** clicking a thumbnail grows it into a large view over the grid (a short zoom from the thumbnail). Closing it by X, Esc, a click on the dark area, Back, or a downward swipe on a phone shrinks it back to the same spot in the grid. *Check: each close method returns to the grid at the same scroll position.*
@@ -43,12 +43,14 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), 16
 
 ## Content: the trial's drawings
 - **Made in ChatGPT** (Luke's subscription), with Claude driving it in Luke's Chrome. The style references are two of the artist's drawings (a hand and a button) and five earlier ChatGPT results in the same style. The artist's map drawing is left out because it's a full scene with red ink. Six sources were tried side by side (Piranesi, Doré, Leonardo, Gemini, ChatGPT, drawn in code); see the [trial page](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV).
-- **Style:** one object per drawing, black ink lines and hatching, no color, plain white background, no text.
-- **160 drawings,** matching the real archive's counts: 2026: 31, 2025: 31, 2024: 6, 2023: 31, 2022: 31, 2021: 30.
-- **One theme per year,** so switching years visibly changes the page: 2026 household items, 2025 outdoors, 2024 make-believe, 2023 tools, 2022 food, 2021 animals. Every subject is listed in advance with no repeats.
+- **Style:** one subject per drawing (an object, a building, an instrument or a person), black ink lines and hatching, no color, plain white background, no text.
+- **Review page:** every drawing so far, by year, with the ones set aside: [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci). Luke approves each year there.
+- **161 drawings:** 31 in each year except 2024, which keeps the real archive's 6. (2021 can drop to the archive's 30.)
+- **One theme per year,** so switching years visibly changes the page: Household items, Outdoors, Make-believe (2024, 6 drawings), Portraits, Architecture, Musical instruments. Every subject is listed in advance with no repeats. Portraits are invented people of varied ethnicity, age and build, in plain clothes, in random order; Luke picked 31 from 45.
+- **Year order:** once all six themes exist, Luke puts the most impressive themes in the most recent years, so visitors see them first. 2024 stays Make-believe. Moving a theme to another year only renames its files.
 - **Dates:** each year runs October 1 through N (2024 is October 1–6). The date is the filename (see feature 11).
 - **Processing:** grayscale, scaled to fit 1440 × 1671 px and padded with white (never cropped), JPEG. No size limit on these full-size files; the site makes its own small thumbnails (feature 10).
-- **When:** generation started during the PRD stage. ChatGPT's daily image cap is not published, so the 160 may take several days. Unfinished years are fine: they get bulk-imported later, which also tests feature 11, and one can be held back for the live demo.
+- **When:** generation started during the PRD stage. ChatGPT's limit is not published; in practice it allowed about 150 images in 3 hours, then asked for 2–4 minute pauses, and under that pressure it merged several drawings into one picture. The rest are made by a scheduled task, 4 every 20 minutes, in a fresh chat each time. Unfinished years are fine: they get bulk-imported later, which also tests feature 11, and one can be held back for the live demo.
 - **No AI disclosure on the site.** Luke's hornof.org projects page explains how the project was built.
 - The artist's two reference drawings stay on Luke's laptop. None of the artist's images are in this repo or on the site.
 
