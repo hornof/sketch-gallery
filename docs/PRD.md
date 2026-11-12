@@ -33,15 +33,15 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), po
 7. Can copy the address at any point to share that year or that exact drawing.
 
 **The owner adds a drawing (the live demo)**
-1. Has a new drawing as a JPEG, named by its date, for example `2026-11-03.jpg`.
-2. Runs one command on the laptop: `add 2026-11-03.jpg`. It checks the name, puts the file in its year's folder in the GitHub repo, and pushes it.
+1. Has a new drawing as a JPEG, for example `2026-11-03.jpg`, or a phone photo with any name.
+2. Runs `add 2026-11-03.jpg` on the laptop, or `add photo.jpg --date 2026-11-03`. The tool checks the file, says what it will do, and asks for a yes.
 3. Within 5 minutes it appears on the live site, in its year, in date order. A new year appears in the menu by itself.
 
-Backup, from any device: drag the file into the year's folder on github.com. Nothing checks the name that way, so a wrongly named file is refused when the site rebuilds.
+Backup, from any device: drag a correctly named file into the year's folder on github.com. Nothing checks the file that way, so a wrongly named one is refused when the site rebuilds.
 
 **The owner loads a past year**
 1. Has a folder of one year's JPEGs, each named by date.
-2. Runs one command on the laptop with the folder. Within 5 minutes the whole year is live.
+2. Runs `import <folder>` on the laptop. Within 5 minutes the whole year is live.
 
 **How it works underneath (why there's no login on the site):** the GitHub repo holds everything the site is made of, including the drawings. Cloudflare republishes the site whenever the repo changes. So adding a drawing means adding it to the repo, and GitHub's login decides who can do that.
 
@@ -61,9 +61,28 @@ Each requirement ends with the check that proves it.
 10. **Fast:** *Check: a 31-drawing year is usable within 2 s on throttled "Fast 4G"; Lighthouse mobile performance ≥ 90; each thumbnail ≤ 60 KB (the site makes small thumbnails itself; the full-size files have no limit); the pop-up shows the original file at full resolution.*
 
 ### Owner
-11. **Load a year:** one step takes a year's folder of JPEGs and makes it that year's gallery. Each file is named by its date, `YYYY-MM-DD.jpg`, and that name is the only source of the date: it sets the caption, the order and the link (`2025-10-07.jpg` → "October 7", `/2025/#7`). File timestamps are ignored. *Check: a 31-image folder is live within 5 min; a file not named `YYYY-MM-DD.jpg` is refused with a clear message.*
-12. **Add one drawing:** one step adds a single dated JPEG, and creates the year if it is new. *Check: it is live within 5 min, in the right year and the right place; the other drawings are unchanged. This is the live demo.*
+The owner changes the gallery with a small command-line tool that lives in the repo and runs on the laptop, from the repo folder. Each drawing's date is its file name, `YYYY-MM-DD.jpg`. That name is the only source of the date: it sets the caption, the order and the link (`2025-10-07.jpg` → "October 7", `/2025/#7`). File timestamps are ignored.
+
+| Command | What it does |
+|---|---|
+| `add 2026-11-03.jpg` | Adds one drawing; the date comes from the file name |
+| `add photo.jpg --date 2026-11-03` | Adds a file that isn't named by date, and gives it the right name |
+| `import <folder>` | Adds a whole folder; every file must be named by date |
+| `--replace` | Allows replacing a drawing that already exists for that date |
+| `--yes` | Skips the confirmation (for the live demo) |
+
+Every command:
+1. **Checks first:** the date is real, the file is a JPEG, and no drawing exists yet for that date (unless `--replace` is given).
+2. **Says what it will do,** for example "Adding October 3, 2026 to 2026 (now 32 drawings)", and asks for a yes.
+3. **Adds the file** to its year's folder, sends it to GitHub, and prints the link where it will appear (`sketch-gallery.hornof.org/2026/#3`) with "live in about 2 minutes".
+4. **On any problem,** says exactly what is wrong and how to fix it, and changes nothing. `import` is all or nothing: if any file has a problem, none are added, and every problem is listed.
+
+The backup needs no tool: drag a correctly named file into the year's folder on github.com.
+
+11. **Load a year:** `import <folder>` makes the folder that year's gallery. *Check: a 31-image folder is live within 5 min; a folder with one badly named file adds nothing and names that file.*
+12. **Add one drawing:** `add` adds a single drawing, and creates the year if it is new. *Check: it is live within 5 min, in the right year and the right place; the other drawings are unchanged; adding a date that already exists is refused unless `--replace` is given; `--date` works for a file not named by date. This is the live demo.*
 13. **Only the owner can change the gallery:** visitors can only look. The site itself has no login and no upload page. Changes come only through the GitHub repo, so GitHub's login is the lock. *Check: the live site serves only static files (no form, no upload, no API); someone without write access to the repo cannot add, change or remove a drawing.*
+### Sharing
 14. **Link preview:** pasting the link into a message, Slack or social media shows the title "Sketch Gallery", the description line and one drawing that Luke picks. *Check: the preview appears in iMessage and Slack.*
 
 ## 6. Design and UX
@@ -119,7 +138,7 @@ Each requirement ends with the check that proves it.
     - **Server code** (a Cloudflare Worker) to receive uploads.
     - **A login** (for example Cloudflare Access with Google sign-in, free for a few people).
   - Roughly 2–4 cards, plus security testing. The real artist may want this, since an artist may not use a terminal.
-- **Other things a production site might add:** visitor stats that respect privacy, an RSS feed or email when a drawing is added, a delete or replace step for the owner, and automatic backups of the drawings.
+- **Other things a production site might add:** visitor stats that respect privacy, an RSS feed or email when a drawing is added, a `delete` command for the owner, and automatic backups of the drawings.
 - **Grid / List switch,** as on the Bezsonova gallery: a list view with one bigger drawing per row beside its date (mockup kept in [`mockups/future-desktop-list.png`](mockups/future-desktop-list.png)).
   - Small: about one card, for a second layout, the switch, and checks in both views.
   - Without words per drawing it adds little over the pop-up; showing each drawing's subject would give it a purpose.
@@ -146,7 +165,7 @@ Each requirement ends with the check that proves it.
 | Grid / List switch | Future work |
 | Where the drawings come from | ChatGPT, one theme per year (section 7) |
 | Address | `sketch-gallery.hornof.org` (section 8) |
-| How the owner adds drawings | A laptop command that adds them to the GitHub repo; dragging into github.com as a backup. No login or upload page on the site (requirement 13). Options considered: an owner page with Google sign-in (future work) or with a password (weakest) |
+| How the owner adds drawings | The `add` and `import` commands on the laptop, which add drawings to the GitHub repo (section 5, Owner); dragging into github.com as a backup. No login or upload page on the site (requirement 13). Options considered: an owner page with Google sign-in (future work) or with a password (weakest) |
 | Dark mode | None; always light |
 | Link preview when shared | Yes: title, description, one drawing (requirement 14) |
 
