@@ -24,7 +24,7 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), po
 
 ## 4. User journeys
 **A visitor browses**
-1. Gets the link, `sketch-gallery.hornof.org`, in a message or from hornof.org. The link preview shows the site's title and a drawing (see open question 3).
+1. Gets the link, `sketch-gallery.hornof.org`, in a message or from hornof.org. The link preview shows the site's title, its description line and a drawing.
 2. Lands on the newest year: the title, one line of description, the year menu, and a grid of drawings with their dates.
 3. Clicks a drawing. It grows from its thumbnail into a large view over a dark background.
 4. Steps through the year with the arrow buttons, the keyboard arrows, or a swipe on a phone. Each step slides to the next drawing. At the first drawing there is no left arrow; at the last, no right arrow.
@@ -34,12 +34,16 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), po
 
 **The owner adds a drawing (the live demo)**
 1. Has a new drawing as a JPEG, named by its date, for example `2026-11-03.jpg`.
-2. Adds it with one step (how exactly is open question 1).
+2. Runs one command on the laptop: `add 2026-11-03.jpg`. It checks the name, puts the file in its year's folder in the GitHub repo, and pushes it.
 3. Within 5 minutes it appears on the live site, in its year, in date order. A new year appears in the menu by itself.
+
+Backup, from any device: drag the file into the year's folder on github.com. Nothing checks the name that way, so a wrongly named file is refused when the site rebuilds.
 
 **The owner loads a past year**
 1. Has a folder of one year's JPEGs, each named by date.
-2. Imports the folder in one step. Within 5 minutes the whole year is live.
+2. Runs one command on the laptop with the folder. Within 5 minutes the whole year is live.
+
+**How it works underneath (why there's no login on the site):** the GitHub repo holds everything the site is made of, including the drawings. Cloudflare republishes the site whenever the repo changes. So adding a drawing means adding it to the repo, and GitHub's login decides who can do that.
 
 ## 5. Requirements
 Each requirement ends with the check that proves it.
@@ -59,7 +63,8 @@ Each requirement ends with the check that proves it.
 ### Owner
 11. **Load a year:** one step takes a year's folder of JPEGs and makes it that year's gallery. Each file is named by its date, `YYYY-MM-DD.jpg`, and that name is the only source of the date: it sets the caption, the order and the link (`2025-10-07.jpg` → "October 7", `/2025/#7`). File timestamps are ignored. *Check: a 31-image folder is live within 5 min; a file not named `YYYY-MM-DD.jpg` is refused with a clear message.*
 12. **Add one drawing:** one step adds a single dated JPEG, and creates the year if it is new. *Check: it is live within 5 min, in the right year and the right place; the other drawings are unchanged. This is the live demo.*
-13. **Only the owner can change the gallery:** visitors can only look. *Check: someone without the owner's access cannot add, change or remove a drawing. How access works is open question 1.*
+13. **Only the owner can change the gallery:** visitors can only look. The site itself has no login and no upload page. Changes come only through the GitHub repo, so GitHub's login is the lock. *Check: the live site serves only static files (no form, no upload, no API); someone without write access to the repo cannot add, change or remove a drawing.*
+14. **Link preview:** pasting the link into a message, Slack or social media shows the title "Sketch Gallery", the description line and one drawing that Luke picks. *Check: the preview appears in iMessage and Slack.*
 
 ## 6. Design and UX
 **Mockups:** five screens, saved in [`mockups/`](mockups/README.md). A clickable version is in Claude ([Sketch Gallery mockups](https://claude.ai/artifact/BP1P6kU4J1Sg5cFvTqto7o), private to Luke). The screens describe the look; gray tiles stand in for drawings.
@@ -69,7 +74,7 @@ Each requirement ends with the check that proves it.
 | <img src="mockups/1-desktop-grid.png" width="220" alt="Desktop grid mockup"> | <img src="mockups/2-desktop-popup.png" width="220" alt="Desktop pop-up mockup"> | <img src="mockups/3-phone-grid.png" width="110" alt="Phone grid mockup"> | <img src="mockups/4-phone-popup.png" width="110" alt="Phone pop-up mockup"> |
 
 **Look:** close to the [Bezsonova gallery](https://pdb101.rcsb.org/sci-art/bezsonova-gallery): quiet, so the drawings stand out.
-- Warm off-white page with near-black text.
+- Warm off-white page with near-black text, **always light**: no dark mode, even when the visitor's device is set to dark. The drawings are black on white, and a dark page around white tiles looks patchy.
 - The title in Space Grotesk, the rest in Inter.
 - The current year underlined with a thick line, and thin rules above and below the year menu.
 - Drawings on white tiles with a thin border, the date in small gray text below each.
@@ -108,6 +113,13 @@ Each requirement ends with the check that proves it.
 - Words per drawing (a "word of the day" caption may come later).
 
 **Future work:** possible features to add later, if and when they're wanted.
+- **An owner page on the site:** upload a drawing from a browser or phone, signed in with Google, without touching GitHub.
+  - This is the step from "a published copy of a GitHub repo" to a stand-alone site. It needs three new things:
+    - **Storage** for uploaded drawings (for example Cloudflare's file storage), or code that commits each upload into the repo.
+    - **Server code** (a Cloudflare Worker) to receive uploads.
+    - **A login** (for example Cloudflare Access with Google sign-in, free for a few people).
+  - Roughly 2–4 cards, plus security testing. The real artist may want this, since an artist may not use a terminal.
+- **Other things a production site might add:** visitor stats that respect privacy, an RSS feed or email when a drawing is added, a delete or replace step for the owner, and automatic backups of the drawings.
 - **Grid / List switch,** as on the Bezsonova gallery: a list view with one bigger drawing per row beside its date (mockup kept in [`mockups/future-desktop-list.png`](mockups/future-desktop-list.png)).
   - Small: about one card, for a second layout, the switch, and checks in both views.
   - Without words per drawing it adds little over the pop-up; showing each drawing's subject would give it a purpose.
@@ -120,7 +132,7 @@ Each requirement ends with the check that proves it.
 - **ChatGPT limits:** generation pauses under its rate limit. Drawings that aren't ready are imported later, which also exercises requirement 11.
 - **The real artist's files may differ:** different sizes or shapes, or not named by date. Requirement 11 refuses badly named files; the real site may need a renaming step.
 - **The trial's placeholders are AI-made:** stated on hornof.org, not on the site.
-- **Assumption:** Luke's laptop and GitHub account are the only places changes come from (unless open question 1 decides otherwise).
+- **Assumption:** the owner has a GitHub account with write access to the repo, and a laptop that can run the add command. The real artist may not; that's what the owner-page future work is for.
 
 ## 11. Decisions so far
 | Question | Decision |
@@ -134,14 +146,9 @@ Each requirement ends with the check that proves it.
 | Grid / List switch | Future work |
 | Where the drawings come from | ChatGPT, one theme per year (section 7) |
 | Address | `sketch-gallery.hornof.org` (section 8) |
+| How the owner adds drawings | A laptop command that adds them to the GitHub repo; dragging into github.com as a backup. No login or upload page on the site (requirement 13). Options considered: an owner page with Google sign-in (future work) or with a password (weakest) |
+| Dark mode | None; always light |
+| Link preview when shared | Yes: title, description, one drawing (requirement 14) |
 
 ## 12. Open questions
-1. **How the owner adds drawings, and who else can't.** The options:
-   - **(a) Laptop command + GitHub:** one command checks the name and adds the file to the GitHub repo, and the site republishes itself in a minute or two. GitHub's login is the lock. Nothing on the site to log into.
-   - **(b) Drag the file into the year's folder on github.com:** works from any device, same lock, nothing to build, but the name must be exactly right.
-   - **(c) An owner page on the site, signed in with Google:** the nicest demo, but it needs server code and storage, so the site is no longer static files only. Roughly 2–4 extra cards.
-   - **(d) An owner page with a password:** weakest. A shared password can leak or be guessed, and it needs the same server code as (c).
-
-   Recommendation: (a), with (b) as a free backup; (c) as future work, since the real artist may want it.
-2. **Dark mode:** follow the visitor's phone or computer setting (dark page, the drawings stay on white tiles), or always light? Recommendation: always light. The drawings are black on white, and a dark page around white tiles looks patchy.
-3. **Link preview when shared:** when the link is pasted into a message or Slack, show the title, the description line and one drawing as the preview image? Recommendation: yes, using a fixed drawing that Luke picks.
+None. All were answered in review; see section 11.
