@@ -76,6 +76,7 @@ Viewer accounts, comments, likes, search, analytics, selling prints, more than o
   | `sketch-gallery.ai` | $80/yr, 2-year minimum ($160 up front) | Available as of 2026-11-11 | Costly; ".ai" suggests the drawings are AI-made |
 
   The real artist picks a domain for the real site.
+- **End of a year in the pop-up:** no wraparound. The first drawing shows only a right arrow, the last only a left arrow, the rest both, so the viewer can see where the year starts and ends (feature 6). The keys do the same, and a swipe past the end bounces back.
 - **Auth:** covered by feature 13. The details (GitHub, Cloudflare deploy keys) go in the TDD.
 - **How to make the 160 drawings:** see Content.
 
@@ -88,5 +89,4 @@ Why it waits:
 - **A smaller version fits the current design:** a laptop command, like bulk import (`generate --year 2027 --count 5`), that calls the API and writes dated files. That adds no server and no login, but still costs API money. A free option is what's used for the trial: Claude drives ChatGPT in the owner's Chrome. It's slow, it needs the laptop, and it's subject to the daily cap.
 
 ## Open questions
-3. **End of a year in the pop-up:** stop at the last drawing (as drawn), or wrap around to the first?
 4. **Grid / List switch:** keep it as a nice-to-have, or drop it?
