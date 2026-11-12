@@ -65,16 +65,17 @@ Viewer accounts, comments, likes, search, analytics, selling prints, more than o
 - **File type:** JPEG. Black and white or grayscale.
 - **Look and feel:** close to the Bezsonova gallery, with one year shown at a time, plus the pop-up viewer (see Mockups).
 - **Previous/next year links:** not needed; the year menu covers it.
-- **Domain:** pros and cons, as asked:
+- **Domain: `sketch-gallery.hornof.org`**, the same name as the repo and the Cloudflare project (whose free address, `sketch-gallery.pages.dev`, also works). It's shareable on its own, and the hornof.org projects page shows it in the same viewer as eclipse, with "Open full screen" and "How it was built" links. hornof.org's DNS is already on Cloudflare, so it's one "custom domain" step. Options considered:
 
   | Option | Cost | For | Against |
   |---|---|---|---|
-  | Subdomain, e.g. `sketches.hornof.org` | Free | One DNS record; clearly part of the hornof.org portfolio | Tied to your domain (fine for a trial) |
+  | **`sketch-gallery.hornof.org`** (chosen) | Free | Matches the repo name; own repo and deploys, so adding a drawing touches one repo | A few letters longer than `sketches` |
+  | Path `hornof.org/projects/sketch-gallery/` (how eclipse is hosted) | Free | Same pattern as eclipse | Every new drawing also needs a copy into the hornof.org repo; links need a path prefix |
   | `sketch-gallery.pages.dev` | Free | No setup at all | Looks unfinished on a portfolio page |
   | `sketch-gallery.com` | — | — | **Taken** (registered at Wix since 2022) |
   | `sketch-gallery.ai` | $80/yr, 2-year minimum ($160 up front) | Available as of 2026-11-11 | Costly; ".ai" suggests the drawings are AI-made |
 
-  Recommendation: `sketches.hornof.org`. The real artist picks a domain for the real site.
+  The real artist picks a domain for the real site.
 - **Auth:** covered by feature 13. The details (GitHub, Cloudflare deploy keys) go in the TDD.
 - **How to make the 160 drawings:** see Content.
 
@@ -87,6 +88,5 @@ Why it waits:
 - **A smaller version fits the current design:** a laptop command, like bulk import (`generate --year 2027 --count 5`), that calls the API and writes dated files. That adds no server and no login, but still costs API money. A free option is what's used for the trial: Claude drives ChatGPT in the owner's Chrome. It's slow, it needs the laptop, and it's subject to the daily cap.
 
 ## Open questions
-2. **Domain:** OK with `sketches.hornof.org`, or another name?
 3. **End of a year in the pop-up:** stop at the last drawing (as drawn), or wrap around to the first?
 4. **Grid / List switch:** keep it as a nice-to-have, or drop it?
