@@ -17,7 +17,9 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), 16
 - **Owner:** the artist (Luke stands in during the trial). Loads past years in bulk once, then adds new drawings from a laptop. Luke also wants to demo this live: add a drawing and show it appear under its year.
 
 ## Features
-Viewer:
+
+### Viewer
+
 1. **One page.** A title ("Sketch Gallery"), the line "This gallery displays drawings made over several years.", a year menu, and the drawings. The site names no artist and no person. *Check: the page text contains no personal names.*
 2. **Year menu:** `2026 | 2025 | 2024 | 2023 | 2022 | 2021`, newest first, current year underlined. The newest year shows by default. Clicking a year **replaces** the drawings in place: no new page load, no jump down the page. *Check: clicking each year shows exactly that year's count (31, 31, 6, 31, 31, 30); the scroll position resets to the top of the grid.*
 3. **Links per year and per drawing:** each year has its own URL (`/2025/`) and each drawing too (`/2025/#7`), so hornof.org or a message can link straight to one. Back and Forward move between years and open or closed drawings. *Check: pasting each URL into a fresh tab opens that year or that drawing.*
@@ -29,12 +31,14 @@ Viewer:
 9. **Phone, tablet and desktop:** *Check: no horizontal scroll at 375, 768 or 1440 px; every button is at least 44 px.*
 10. **Fast:** *Check: a 31-drawing year is usable within 2 s on throttled "Fast 4G"; Lighthouse mobile performance ≥ 90; each thumbnail ≤ 60 KB; the pop-up shows the original file at full resolution.*
 
-Owner:
+### Owner
+
 11. **Bulk import:** one command on the laptop takes a folder of JPEGs and a year, and those images become that year's gallery, in filename order. *Check: a 31-image folder is live within 5 min of the command finishing.*
 12. **Add one drawing:** one command on the laptop adds a single JPEG to a year, and creates the year if it is new. *Check: it is live within 5 min; the other drawings are unchanged. This is the live demo.*
 13. **No login on the site:** viewers never log in (the site is public). The site has no upload page, so nothing on it can be changed from a browser. Changes go through the owner's laptop and GitHub, so GitHub's login is the only lock. *Check: the deployed site serves only static files: no form, no API.*
 
-Nice to have (built last, and only if small):
+### Nice to have (built last, and only if small)
+
 14. **Grid / List switch,** as on the Bezsonova gallery. The list view shows a bigger thumbnail beside the date. Without prompt words or descriptions the list adds little, so it can be dropped.
 
 ## Content: the trial's drawings
