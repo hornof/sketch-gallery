@@ -1,4 +1,6 @@
-# PRD — sketch-gallery   (status: DRAFT, revision 3)
+# PRD — sketch-gallery   (status: APPROVED by Luke, 2026-11-12, revision 3)
+
+From here on, this wording changes only when Luke explicitly chooses to change it.
 
 Source: brain dump on issue #2 (2026-11-10), Luke's review of PR #4 (2026-11-11), and decisions made with Luke on 2026-11-12.
 Supporting files: [mockups](mockups/README.md) · [the drawings](drawings.md) · [drawing sources compared](research/drawing-sources.md).
