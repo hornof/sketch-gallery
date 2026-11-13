@@ -23,7 +23,7 @@ flowchart LR
 | PRD input: [issue 2](https://github.com/hornof/sketch-gallery/issues/2) | The human PM's product details, which Claude used to write the first draft of the PRD | Start |
 | [docs/PRD.md](PRD.md) | The Product Requirements Doc: what the site does and for whom, with mockup screenshots in docs/mockups/ | Approved at gate 1 |
 | [docs/drawings.md](drawings.md) | The placeholder drawings: themes by year, samples, how they were made | PRD, then the build |
-| [docs/STORY.md](STORY.md) | The project's turning points, one entry per stage | A new entry after each stage |
+| [docs/HISTORY.md](HISTORY.md) | The project's turning points, one entry per stage | A new entry after each stage |
 | [docs/MAP.md](MAP.md) | The map, in the repo. The map artifact is built from it. | Any time |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md` | After every change to `docs/MAP.md` |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |

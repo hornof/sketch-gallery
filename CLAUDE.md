@@ -18,7 +18,7 @@
 - When you add a new piece (a page, a folder, a scheduled task, an outside account), add it to `docs/MAP.md` at the same time.
 - Keep the map current without being asked. After every merge, whenever a PR opens, at the end of each stage, and whenever the human asks where things stand: check every row of `docs/MAP.md` against the real state (GitHub, Claude artifacts, the developer's computer, outside services) and fix it before replying. Check the board the same way: every card in the right column, and a card for the stage we're in. For things that change often, like PR or card status, link GitHub's live list instead of copying the status.
 - The map artifact is built from `docs/MAP.md`: run `python3 scripts/map-artifact.py <output.html> <map artifact link>` and publish the output to the same artifact. Never edit the artifact by hand. Build it from main after every merge; links to repo files point at the branch it was built from.
-- After each stage, add an entry to `docs/STORY.md`: the stage's decisions, surprises and changes of mind.
+- After each stage, add an entry to `docs/HISTORY.md`: the stage's decisions, surprises and changes of mind.
 - Before showing the human a markdown doc, check how GitHub displays it: `gh api markdown -F mode=gfm -F text=@<file>`.
 - In a public repo, never name anyone who isn't on the repo.
 - Claude uses the human's GitHub login, so GitHub can't tell who did what. End every PR description and comment Claude writes with its role, for example `— Claude (orchestrator)`. Skip this once Claude has its own GitHub account.
