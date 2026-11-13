@@ -6,7 +6,7 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 ```mermaid
 flowchart LR
-  s1[Brain dump]:::done --> s2[PRD, gate 1]:::done --> s3[TDD, gate 2]:::now --> s4[Board]:::next --> s5[Build]:::next --> s6[Review and merge, gate 3]:::next --> s7[Check the live product]:::next
+  s1[Brain dump]:::done --> s2[PRD, gate 1]:::done --> s3[TDD, gate 2]:::now --> s4[Split the TDD into cards]:::next --> s5[Build]:::next --> s6[Review and merge, gate 3]:::next --> s7[Check the live product]:::next
   classDef done fill:#E3EFE9,stroke:#1F5E4A,color:#1F5E4A
   classDef now fill:#1F5E4A,stroke:#1F5E4A,color:#FFFFFF
   classDef next fill:#FFFFFF,stroke:#BBB6AC,color:#55524B
@@ -16,7 +16,7 @@ flowchart LR
 | Piece | What it is | When it's used |
 |---|---|---|
 | Repo: [hornof/sketch-gallery](https://github.com/hornof/sketch-gallery) | The code, docs and content | Every stage |
-| Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress, one card per piece of work | From the board stage on |
+| Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress: one card per stage, then one card per piece of work from the TDD | Every stage |
 | [Open PRs](https://github.com/hornof/sketch-gallery/pulls) | Work waiting for review or merge. GitHub keeps this list current. | Every stage |
 | Brain dump: [issue 2](https://github.com/hornof/sketch-gallery/issues/2) | The original description of the project | Start |
 | [docs/PRD.md](PRD.md) | What the site does and for whom, with mockup screenshots in docs/mockups/ | Approved at gate 1 |
@@ -36,8 +36,8 @@ Pages Claude makes and hosts. Each one is private to its creator until shared.
 | [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci) (plain page) | Every placeholder drawing by year, newest year first, plus the ones set aside | While the drawings were made; reference |
 | [Placeholder Drawing Trials](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV) (plain page) | Six drawing sources compared, which led to choosing ChatGPT | Done; kept for the record |
 
-## Local files
-Files on the developer's computer.
+## On the developer's computer
+Folders, and scheduled tasks that run Claude unattended.
 
 | Piece | What it is | When it's used |
 |---|---|---|

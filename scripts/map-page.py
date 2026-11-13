@@ -120,12 +120,25 @@ def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     text = open(MAP).read()
-    info = json.loads(run(["gh", "repo", "view", "--json", "nameWithOwner,defaultBranchRef"]))
-    repo, branch = info["nameWithOwner"], info["defaultBranchRef"]["name"]
+    repo = json.loads(run(["gh", "repo", "view", "--json", "nameWithOwner"]))["nameWithOwner"]
+    # Links to repo files point at the branch the page is built from, so they work while a PR is open.
+    # After the merge, rebuild from main.
+    branch = run(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
     body = run(["gh", "api", "markdown", "-f", f"text={text}", "-f", "mode=gfm", "-f", f"context={repo}"])
     commit = run(["git", "rev-parse", "--short", "HEAD"]).strip()
-    open(sys.argv[1], "w").write(build(text, body, repo, branch, commit, sys.argv[2]))
+    page = build(text, body, repo, branch, commit, sys.argv[2])
+    # Every linked repo file must exist on GitHub on that branch (so it must be pushed).
+    for path in repo_files(page, repo, branch):
+        if subprocess.run(["gh", "api", f"repos/{repo}/contents/{path}?ref={branch}", "--silent"],
+                          capture_output=True).returncode != 0:
+            sys.exit(f"linked file not on GitHub on branch {branch}: {path} (push first?)")
+    open(sys.argv[1], "w").write(page)
     print("wrote", sys.argv[1])
+
+
+def repo_files(page, repo, branch):
+    """Paths of the repo files a page links to."""
+    return re.findall(rf'href="https://github.com/{re.escape(repo)}/blob/{re.escape(branch)}/([^"]+)"', page)
 
 
 if __name__ == "__main__":

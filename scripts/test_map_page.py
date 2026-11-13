@@ -80,6 +80,19 @@ class Build(unittest.TestCase):
         self.assertEqual(len(mp.md_rows("| a |\n|:--|\n| b |\n")), 2)
 
 
+class RepoFiles(unittest.TestCase):
+    def test_finds_only_this_repos_files_on_this_branch(self):
+        page = ('<a href="https://github.com/owner/repo/blob/main/docs/PRD.md">'
+                '<a href="https://github.com/owner/repo/blob/other/docs/X.md">'
+                '<a href="https://github.com/owner/repo">'
+                '<a href="https://github.com/someone/else/blob/main/a.md">')
+        self.assertEqual(mp.repo_files(page, REPO, BRANCH), ["docs/PRD.md"])
+
+    def test_branch_names_with_slashes(self):
+        page = '<a href="https://github.com/owner/repo/blob/docs/fix-x/scripts/a.py">'
+        self.assertEqual(mp.repo_files(page, REPO, "docs/fix-x"), ["scripts/a.py"])
+
+
 class Stages(unittest.TestCase):
     def test_diagram_becomes_colored_boxes_in_order(self):
         page = build()
