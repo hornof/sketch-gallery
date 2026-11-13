@@ -18,7 +18,7 @@ flowchart LR
 | Piece | What it is | When it's used |
 |---|---|---|
 | Repo: [hornof/sketch-gallery](https://github.com/hornof/sketch-gallery) | The code, docs and content. [README.md](../README.md) lists every file and who reads it. | Every stage |
-| Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress: one issue for the PRD and one for the TDD, then one issue per piece of work from the TDD | Every stage |
+| Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress: one issue for the PRD and one for the TDD, then one issue per piece of work from the TDD, plus one issue for any other change (like #9) | Every stage |
 | [Open PRs](https://github.com/hornof/sketch-gallery/pulls) | Work waiting for review or merge. GitHub keeps this list current. | Every stage |
 | PRD input: [issue 2](https://github.com/hornof/sketch-gallery/issues/2) | The human's product details, which Claude used to write the first draft of the PRD. The PRD's issue on the board. | Start |
 | [docs/PRD.md](PRD.md) | The Product Requirements Doc: what the site does and for whom, with mockup screenshots in docs/mockups/ | Approved at gate 1 |

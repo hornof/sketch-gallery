@@ -142,11 +142,7 @@ def main():
     body = run(["gh", "api", "markdown", "-f", f"text={text}", "-f", "mode=gfm", "-f", f"context={repo}"])
     commit = run(["git", "rev-parse", "--short", "HEAD"]).strip()
     page = build(text, body, repo, branch, commit, sys.argv[2])
-    # Every linked repo file must exist on GitHub on that branch (so it must be pushed).
-    for path in repo_files(page, repo, branch):
-        if subprocess.run(["gh", "api", f"repos/{repo}/contents/{path}?ref={branch}", "--silent"],
-                          capture_output=True).returncode != 0:
-            sys.exit(f"linked file not on GitHub on branch {branch}: {path} (push first?)")
+    check_files(page, repo, branch, on_github)
     open(sys.argv[1], "w").write(page)
     print("wrote", sys.argv[1])
 
@@ -157,6 +153,18 @@ def check_source(status, branch):
         sys.exit(f"{MAP} has changes that aren't committed; commit them first")
     if branch == "HEAD":
         sys.exit("not on a branch; check out a branch first")
+
+
+def on_github(repo, branch, path):
+    return subprocess.run(["gh", "api", f"repos/{repo}/contents/{path}?ref={branch}", "--silent"],
+                          capture_output=True).returncode == 0
+
+
+def check_files(page, repo, branch, exists):
+    """Every repo file the page links to must exist on GitHub on that branch (so it must be pushed)."""
+    for path in repo_files(page, repo, branch):
+        if not exists(repo, branch, path):
+            sys.exit(f"linked file not on GitHub on branch {branch}: {path} (push first?)")
 
 
 def repo_files(page, repo, branch):

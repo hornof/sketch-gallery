@@ -14,6 +14,10 @@ Added once there's something to use.
 |---|---|---|
 | docs/collaborator-guide.md | For an invited collaborator: the steps, in order | collaborator |
 | docs/MAP.md | Every piece of the project and where it lives | anyone |
+| docs/drawings.md | The placeholder drawings: themes by year, samples, how they were made; images in docs/drawings/ | the human |
+| docs/research/drawing-sources.md | The six drawing sources compared, and why ChatGPT was chosen; images in docs/research/drawing-sources/ | the human |
+| .github/workflows/ci.yml | The test workflow GitHub runs on every PR | Claude |
+| .gitignore | Files git leaves out of the repo | Claude |
 | docs/HISTORY.md | The project's turning points: decisions, surprises, changes of mind. Start here to see why the project looks the way it does | anyone |
 | docs/reviewer-notes.md | The human's rulings on past reviews; the reviewer reads it before every review | Claude |
 | scripts/map-artifact.py | Builds the map artifact from docs/MAP.md; its tests are in scripts/test_map_artifact.py | Claude |

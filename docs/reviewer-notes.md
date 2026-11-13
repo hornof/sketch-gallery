@@ -20,3 +20,5 @@ The human's rulings on past reviews. The reviewer reads this file before every r
 ## Settled, don't raise again
 - `docs/HISTORY.md` stays oldest first. (#7)
 - The map shows the current stage in its diagram and on the "Now" line; the checks in CLAUDE.md keep it right. (#7)
+- The renames in the approved PRD ("PRD input", "issue") were the human's choice. (#7)
+- Commits made before a new rule are not rewritten to follow it. (#7)

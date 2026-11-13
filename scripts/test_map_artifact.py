@@ -144,6 +144,20 @@ class RepoFilesWithHeadings(unittest.TestCase):
         self.assertEqual(mp.repo_files(page, REPO, BRANCH), ["docs/PRD.md"])
 
 
+class FilesOnGitHub(unittest.TestCase):
+    PAGE = ('<a href="https://github.com/owner/repo/blob/main/docs/PRD.md">'
+            '<a href="https://github.com/owner/repo/blob/main/scripts/a.py#top">')
+
+    def test_all_files_present_passes(self):
+        asked = []
+        mp.check_files(self.PAGE, REPO, BRANCH, lambda r, b, p: asked.append((r, b, p)) or True)
+        self.assertEqual(asked, [(REPO, BRANCH, "docs/PRD.md"), (REPO, BRANCH, "scripts/a.py")])
+
+    def test_missing_file_is_caught(self):
+        with self.assertRaises(SystemExit):
+            mp.check_files(self.PAGE, REPO, BRANCH, lambda r, b, p: p != "scripts/a.py")
+
+
 class Source(unittest.TestCase):
     def test_clean_file_on_a_branch_passes(self):
         mp.check_source("", "main")
