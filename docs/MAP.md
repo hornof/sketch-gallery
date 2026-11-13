@@ -4,7 +4,13 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 **Now:** PRD approved (gate 1); TDD next
 
-**Stages:** brain dump → PRD (gate 1) → TDD (gate 2) → board → build → review and merge (gate 3) → check the live product
+```mermaid
+flowchart LR
+  s1[Brain dump]:::done --> s2[PRD, gate 1]:::done --> s3[TDD, gate 2]:::now --> s4[Board]:::next --> s5[Build]:::next --> s6[Review and merge, gate 3]:::next --> s7[Check the live product]:::next
+  classDef done fill:#E3EFE9,stroke:#1F5E4A,color:#1F5E4A
+  classDef now fill:#1F5E4A,stroke:#1F5E4A,color:#FFFFFF
+  classDef next fill:#FFFFFF,stroke:#BBB6AC,color:#55524B
+```
 
 ## GitHub
 | Piece | What it is | When it's used |

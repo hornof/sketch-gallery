@@ -17,7 +17,7 @@
 - Working with the human: follow the sections "How the human reviews" and "Helping the human keep track" in the playbook (`docs/playbook.md` in the apb plugin). In short: one question at a time, in plain chat; only "approved" is approval; show everything visual; one link per thing.
 - When you add a new piece (a page, a folder, a scheduled task, an outside account), add it to `docs/MAP.md` at the same time.
 - Keep the map current without being asked. After every merge, whenever a PR opens, at the end of each stage, and whenever the human asks where things stand: check every row of `docs/MAP.md` against the real state (GitHub, Claude pages, local files, outside services) and fix it before replying. For things that change often, like PR or card status, link GitHub's live list instead of copying the status.
-- The map page is built from `docs/MAP.md`: run `python3 scripts/map-page.py <output.html>` and publish the output to the same page. Never edit the page by hand.
+- The map page is built from `docs/MAP.md`: run `python3 scripts/map-page.py <output.html> <map page link>` and publish the output to the same page. Never edit the page by hand.
 - After each stage, add an entry to `docs/STORY.md`: the stage's decisions, surprises and changes of mind.
 - Before showing the human a markdown doc, check how GitHub displays it: `gh api markdown -F mode=gfm -F text=@<file>`.
 - In a public repo, never name anyone who isn't on the repo.
