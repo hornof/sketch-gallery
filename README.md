@@ -1,18 +1,25 @@
 # sketch-gallery
 
-A web gallery for posting and browsing sketches.
+A web gallery for posting and browsing sketches, one page per year.
 
 Built with the apb process: https://github.com/hornof/apb
+
+## Using it
+
+Added once there's something to use.
 
 ## Files
 
 | File | What it is | Who reads it |
 |---|---|---|
-| docs/collaborator-guide.md | The steps, in order. Start here. | collaborator |
-| docs/PRD.md | What it does and for whom (written after the brain dump) | collaborator, Claude |
+| docs/collaborator-guide.md | For invited teammates: the steps, in order | teammates |
+| docs/MAP.md | Every piece of the project and where it lives | anyone |
+| docs/STORY.md | The project's turning points for people: decisions, surprises, changes of mind. Start here to learn the project's history | anyone |
+| docs/PRD.md | What it does and for whom (written after the brain dump), with any mockups in docs/mockups/ | collaborator, Claude |
 | docs/TDD.md | How it's built and tested (written after the PRD is approved) | collaborator, Claude |
 | CLAUDE.md | Rules every Claude session follows in this repo | Claude |
-| LOG.md | One line per build iteration | anyone |
-| LESSONS.md | What building it taught | anyone |
+| .claude/settings.json | What Claude is allowed to do here, shared by everyone | Claude |
+| LOG.md | Claude's record of every build step: what changed and whether tests passed | Claude |
+| LESSONS.md | Technical lessons from debugging and testing; each rule they lead to also goes in CLAUDE.md | Claude, builders |
 
-Progress is on the GitHub Projects [sketch-gallery](https://github.com/users/hornof/projects/2) board, not in this file.
+Progress is on the GitHub Projects board, not in this file: [sketch-gallery](https://github.com/users/hornof/projects/2)
