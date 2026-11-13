@@ -1,20 +1,20 @@
-"""Tests for map-page.py. Run from the repo root: python3 -m unittest discover scripts"""
+"""Tests for map-artifact.py. Run from the repo root: python3 -m unittest discover scripts"""
 import importlib.util
 import os
 import unittest
 
-spec = importlib.util.spec_from_file_location("map_page", os.path.join(os.path.dirname(__file__), "map-page.py"))
+spec = importlib.util.spec_from_file_location("map_artifact", os.path.join(os.path.dirname(__file__), "map-artifact.py"))
 mp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mp)
 
 REPO, BRANCH, PAGE = "owner/repo", "main", "https://claude.ai/artifact/abc"
 MD = """# `demo`: project map
 
-The [map page](https://claude.ai/artifact/abc) is built from this file.
+The [map artifact](https://claude.ai/artifact/abc) is built from this file.
 
 ```mermaid
 flowchart LR
-  s1[Brain dump]:::done --> s2[PRD, gate 1]:::now --> s3[Build]:::next
+  s1[PRD input]:::done --> s2[PRD, gate 1]:::now --> s3[Build]:::next
   classDef done fill:#E3EFE9
 ```
 
@@ -25,7 +25,7 @@ flowchart LR
 """
 # The shape of what GitHub's renderer returns for MD.
 HTML = """<h1>demo: project map</h1>
-<p>The <a href="https://claude.ai/artifact/abc">map page</a> is built from this file.</p>
+<p>The <a href="https://claude.ai/artifact/abc">map artifact</a> is built from this file.</p>
 <section class="js-render-needs-enrichment" data-type="mermaid"><pre lang="mermaid">flowchart LR</pre></section>
 <table><thead><tr><th>Piece</th><th>What it is</th></tr></thead><tbody>
 <tr><td><a href="PRD.md">PRD</a></td><td>The product doc</td></tr>
@@ -60,7 +60,7 @@ class Build(unittest.TestCase):
     def test_link_to_the_page_itself_becomes_text(self):
         page = build()
         self.assertNotIn(f'href="{PAGE}"', page)
-        self.assertIn("The map page is built", page)
+        self.assertIn("The map artifact is built", page)
 
     def test_missing_row_is_caught(self):
         dropped = HTML.replace('<tr><td><a href="https://example.com">Site</a></td><td>The live site</td></tr>', "")
@@ -103,7 +103,7 @@ class Stages(unittest.TestCase):
         self.assertIn('<li class="now"><span class="t">PRD, gate 1</span><span class="s">Now</span>', page)
 
     def test_stages_read_from_file(self):
-        self.assertEqual(mp.stages(MD), [("Brain dump", "done"), ("PRD, gate 1", "now"), ("Build", "next")])
+        self.assertEqual(mp.stages(MD), [("PRD input", "done"), ("PRD, gate 1", "now"), ("Build", "next")])
 
     def test_no_current_stage_is_caught(self):
         with self.assertRaises(SystemExit):

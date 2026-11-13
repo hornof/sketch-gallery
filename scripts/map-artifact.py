@@ -1,12 +1,13 @@
-"""Builds the project map page from docs/MAP.md, so the page and the file never disagree.
+"""Builds the map artifact (a Claude artifact) from docs/MAP.md, so the two never disagree.
 
-Usage, from the repo root:  python3 scripts/map-page.py <output.html> <map page link>
-Then publish <output.html> to the same Claude page as before. Never edit the page by hand.
-The stages diagram in the file shows on GitHub as a diagram and on the page as colored boxes.
+Usage, from the repo root:  python3 scripts/map-artifact.py <output.html> <map artifact link>
+Then publish <output.html> to the same artifact as before. Never edit the artifact by hand.
+The stages diagram in docs/MAP.md shows on GitHub as a diagram and in the artifact as colored boxes.
 
-Needs the GitHub CLI (gh), signed in. It uses GitHub's own markdown renderer, so the page
+Needs the GitHub CLI (gh), signed in. It uses GitHub's own markdown renderer, so the artifact
 shows the map the way GitHub does. Links to files in the repo become links to GitHub.
-Before writing, it checks that every table row and every link in the file made it onto the page.
+Before writing, it checks that every table row and every link in docs/MAP.md made it into the
+artifact, and that every linked repo file exists on GitHub.
 """
 import html
 import json
@@ -54,26 +55,26 @@ def stage_strip(pairs):
 
 
 def build(text, body, repo, branch, commit, page_url):
-    # GitHub draws the diagram with its own script; the page shows the same stages as colored boxes.
+    # GitHub draws the diagram with its own script; the artifact shows the same stages as colored boxes.
     pairs = stages(text)
     body = re.sub(r'<section[^>]*data-type="mermaid".*?</section>', lambda m: stage_strip(pairs), body, flags=re.S)
-    # A link to this page itself does nothing on the page, so it becomes plain text there.
+    # A link to this page itself does nothing in the artifact, so it becomes plain text there.
     body = re.sub(r'<a href="' + re.escape(page_url) + r'"[^>]*>(.*?)</a>', r"\1", body)
     body = re.sub(r'href="([^"]+)"',
                   lambda m: f'href="{absolute(m.group(1), repo, branch)}" target="_blank" rel="noopener"', body)
     title = re.search(r"^# (.+)$", text, re.M).group(1).replace("`", "")
-    # Checks: nothing in the file may go missing on the page.
+    # Checks: nothing in the file may go missing in the artifact.
     rows_md, rows_html = len(md_rows(text)), body.count("<tr>")
     if rows_md != rows_html:
-        sys.exit(f"table rows: {rows_md} in {MAP}, {rows_html} on the page")
+        sys.exit(f"table rows: {rows_md} in {MAP}, {rows_html} in the artifact")
     for href in md_links(text):
         if href != page_url and f'href="{absolute(href, repo, branch)}"' not in body:
-            sys.exit(f"link missing on the page: {href}")
+            sys.exit(f"link missing in the artifact: {href}")
     if [s for _, s in pairs].count("now") != 1:
         sys.exit("the stages diagram needs exactly one stage marked :::now")
     for label, state in pairs:
         if f'<li class="{state}"><span class="t">{html.escape(label)}</span>' not in body:
-            sys.exit(f"stage missing on the page: {label}")
+            sys.exit(f"stage missing in the artifact: {label}")
     note = f"Built from {MAP} at commit {commit} on {date.today().isoformat()}."
     return PAGE.format(title=title, body=body, note=note)
 
@@ -121,7 +122,7 @@ def main():
         sys.exit(__doc__)
     text = open(MAP).read()
     repo = json.loads(run(["gh", "repo", "view", "--json", "nameWithOwner"]))["nameWithOwner"]
-    # Links to repo files point at the branch the page is built from, so they work while a PR is open.
+    # Links to repo files point at the branch the artifact is built from, so they work while a PR is open.
     # After the merge, rebuild from main.
     branch = run(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
     body = run(["gh", "api", "markdown", "-f", f"text={text}", "-f", "mode=gfm", "-f", f"context={repo}"])

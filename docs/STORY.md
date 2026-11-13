@@ -3,7 +3,7 @@
 The story of this project, one entry per stage, oldest first. A newcomer should be able to read it in five minutes and understand why the project looks the way it does. The PRs hold the details; this file holds the turning points.
 
 ## 2026-11-06: Setup
-- Repo and board created. Brain dump: [issue 2](https://github.com/hornof/sketch-gallery/issues/2).
+- Repo and board created. PRD input: [issue 2](https://github.com/hornof/sketch-gallery/issues/2).
 - This project is a trial run of the apb process: a small yearly sketch gallery, built first with placeholder drawings so the process can be tested before the real one.
 - A test workflow was added at setup, before there was anything to test. apb has since moved that step to after the TDD.
 
