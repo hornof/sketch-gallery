@@ -1,32 +1,50 @@
 # sketch-gallery: project map
 
-Every piece of this project, where it lives, and when it's used. Claude adds each new piece as soon as it exists.
+Every piece of this project, where it lives, and when it's used. Claude adds each new piece as soon as it exists, and checks the whole map after every merge, whenever a PR opens, at the end of each stage, and whenever the human asks where things stand.
 
-**Now:** PRD approved (gate 1); TDD next
+The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Stages:** brain dump → PRD (gate 1) → TDD (gate 2) → board → build → review and merge (gate 3) → check the live product
+**Now:** TDD (gate 2), [issue 8](https://github.com/hornof/sketch-gallery/issues/8)
+
+```mermaid
+flowchart LR
+  s1["PRD input"]:::done --> s2["PRD (gate 1)"]:::done --> s3["TDD (gate 2)"]:::now --> s4["Split the TDD into issues"]:::next --> s5["Build"]:::next --> s6["Review and merge (gate 3)"]:::next --> s7["Check the live product"]:::next
+  classDef done fill:#E3EFE9,stroke:#1F5E4A,color:#1F5E4A
+  classDef now fill:#1F5E4A,stroke:#1F5E4A,color:#FFFFFF
+  classDef next fill:#FFFFFF,stroke:#BBB6AC,color:#55524B
+```
 
 ## GitHub
 | Piece | What it is | When it's used |
 |---|---|---|
-| Repo: [hornof/sketch-gallery](https://github.com/hornof/sketch-gallery) | The code, docs and content | Every stage |
-| Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress, one card per piece of work | From the board stage on |
-| Brain dump: [issue 2](https://github.com/hornof/sketch-gallery/issues/2) | The original description of the project | Start |
-| [docs/PRD.md](PRD.md) | What the site does and for whom, with mockup screenshots in docs/mockups/ | Approved at gate 1 |
+| Repo: [hornof/sketch-gallery](https://github.com/hornof/sketch-gallery) | The code, docs and content. [README.md](../README.md) lists every file and who reads it. | Every stage |
+| Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress: one issue for the PRD and one for the TDD, then one issue per piece of work from the TDD, plus one issue for any other change (like #9) | Every stage |
+| [Open PRs](https://github.com/hornof/sketch-gallery/pulls) | Work waiting for review or merge. GitHub keeps this list current. | Every stage |
+| PRD input: [issue 2](https://github.com/hornof/sketch-gallery/issues/2) | The human's product details, which Claude used to write the first draft of the PRD. The PRD's issue on the board. | Start |
+| [docs/PRD.md](PRD.md) | The Product Requirements Doc: what the site does and for whom, with mockup screenshots in docs/mockups/ | Approved at gate 1 |
 | [docs/drawings.md](drawings.md) | The placeholder drawings: themes by year, samples, how they were made | PRD, then the build |
+| [docs/research/drawing-sources.md](research/drawing-sources.md) | The six drawing sources compared, and why ChatGPT was chosen | PRD; kept for the record |
+| TDD: [issue 8](https://github.com/hornof/sketch-gallery/issues/8) | The TDD's issue on the board | TDD |
+| [docs/HISTORY.md](HISTORY.md) | The project's turning points, one entry per stage | A new entry after each stage |
+| [docs/MAP.md](MAP.md) | The map, in the repo. The map artifact is built from it. | Any time |
+| [docs/reviewer-notes.md](reviewer-notes.md) | The human's rulings on past reviews; the reviewer reads it before every review | Every review |
+| [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
+| [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
+| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR. It runs no tests yet; the TDD picks the test setup. | Every PR |
+| Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
-## Claude pages
-Pages Claude makes and hosts. Each one is private to its creator until shared.
+## Claude artifacts
+Web pages Claude makes and hosts on claude.ai. Each is private to its owner until shared. The kind is in parentheses after each name: a Design is a set of clickable screen mockups; a plain page is any other page.
 
 | Piece | What it is | When it's used |
 |---|---|---|
-| [Sketch Gallery mockups](https://claude.ai/artifact/BP1P6kU4J1Sg5cFvTqto7o) (Design) | Clickable designs of the main screens | PRD review |
-| [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci) (plain page) | Every placeholder drawing by year, plus the ones set aside | While the drawings were made; reference |
+| Map artifact: [sketch-gallery: project map](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) (plain page) | Built from `docs/MAP.md`; never edited by hand. | Any time |
+| [Sketch Gallery mockups](https://claude.ai/artifact/BP1P6kU4J1Sg5cFvTqto7o) (Design) | Clickable designs of the main screens | PRD review (done) |
+| [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci) (plain page) | Every placeholder drawing by year, newest year first, plus the ones set aside | While the drawings were made; reference |
 | [Placeholder Drawing Trials](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV) (plain page) | Six drawing sources compared, which led to choosing ChatGPT | Done; kept for the record |
-| [Sketch Gallery Map](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) (plain page) | The same map as this file, as a page | Any time |
 
-## Local files
-Files on the developer's computer.
+## On the human's computer
+Folders, and scheduled tasks that run Claude unattended.
 
 | Piece | What it is | When it's used |
 |---|---|---|
@@ -37,6 +55,6 @@ Files on the developer's computer.
 ## Outside services
 | Piece | What it is | When it's used |
 |---|---|---|
-| ChatGPT | Made the placeholder drawings, driven by Claude in the developer's browser | Done |
+| ChatGPT | Made the placeholder drawings, driven by Claude in the human's browser | Done |
 | Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org` | Set up after the TDD |
 | hornof.org projects page | An entry for this project once it's live | After launch |
