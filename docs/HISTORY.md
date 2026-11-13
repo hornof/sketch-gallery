@@ -7,7 +7,7 @@ The history of this project, one entry per stage, oldest first. A newcomer shoul
 - This project is a trial run of the apb process: a small yearly sketch gallery, built first with placeholder drawings so the process can be tested before the real one.
 - A test workflow was added at setup, before there was anything to test. apb has since moved that step to after the TDD.
 
-## 2026-11-12: PRD approved (gate 1)
+## 2026-11-12: PRD (gate 1) approved
 - **Placeholder drawings come from ChatGPT.** Six sources were compared (old public-domain artists, Gemini, ChatGPT, drawings made in code); ChatGPT's single object on white matched the look best. One theme per year, 161 drawings in all.
 - **ChatGPT's limits shaped the work.** After about 150 images in 3 hours it asked for pauses, and later it refused until a reset time it named. Near the limit it squeezed several drawings into one picture. The last two themes were made by a scheduled task, in batches of four every 20 minutes.
 - **The owner adds drawings from a laptop, not a web page.** Commands add drawings to the repo, and dragging files into GitHub is the backup. An owner page with Google sign-in was considered and moved to Future work: it needs storage, server code and a login.

@@ -5,9 +5,9 @@ This guide is for someone invited to join a project that already uses apb. Start
 You'll build sketch-gallery, a web gallery for browsing sketches by year, with Claude. Claude writes the plans and the code. You decide what to build, answer its questions, and approve each step. The process is called [apb](https://github.com/hornof/apb/blob/main/docs/playbook.md); you don't need to read about it now. Go through the steps below in order.
 
 Claude proposes every change as a pull request (PR) on GitHub. You approve a PR by merging it. At three points, called **gates**, Claude stops and waits for your approval before going on:
-- **Gate 1, the PRD** (product requirements document): what the product does and for whom.
-- **Gate 2, the TDD** (technical design document): how it's built and tested.
-- **Gate 3, each feature's PR**: the code for one feature.
+- **PRD (gate 1)**, the product requirements document: what the product does and for whom.
+- **TDD (gate 2)**, the technical design document: how it's built and tested.
+- **Review and merge (gate 3)**: one PR per feature, with its code.
 
 - Repo: https://github.com/hornof/sketch-gallery
 - Board: https://github.com/users/hornof/projects/2
@@ -37,4 +37,4 @@ Claude proposes every change as a pull request (PR) on GitHub. You approve a PR 
 
 5. **TDD.** Tell Claude: "PRD approved; draft the TDD." Claude writes `docs/TDD.md`: the parts of the system, where data is stored, and how each requirement is tested. It opens a PR. Review it the same way as the PRD. Saying "approved" and merging is gate 2. Then Claude sets up two things the TDD chose: where the product runs or is published, and automatic tests that run on every PR. This project already has a placeholder test workflow from setup; Claude points it at the chosen stack. Claude proves the setup works with one small PR for you to merge.
 
-6. **Build.** The repo's project board lists the work as items, one per feature. Tell Claude "build the next item." Claude takes the top item, writes the tests first, then the code, and opens a PR. A separate Claude reviewer that didn't write the code checks it. You merge it (gate 3), then check the live product.
+6. **Build.** After the TDD, Claude adds an issue to the project board for each piece of work. Tell Claude "build the next issue." Claude takes the top issue, writes the tests first, then the code, and opens a PR. A separate Claude reviewer that didn't write the code checks it. You merge it (gate 3), then check the live product.

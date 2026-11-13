@@ -2,7 +2,7 @@
 
 From here on, this wording changes only when Luke explicitly chooses to change it.
 
-Source: brain dump on issue #2 (2026-11-10), Luke's review of PR #4 (2026-11-11), and decisions made with Luke on 2026-11-12.
+Source: PRD input on issue #2 (2026-11-10), Luke's review of PR #4 (2026-11-11), and decisions made with Luke on 2026-11-12.
 Supporting files: [mockups](mockups/README.md) · [the drawings](drawings.md) · [drawing sources compared](research/drawing-sources.md).
 
 ## 1. What & why
@@ -18,7 +18,7 @@ The real artist's archive sets the shape of the trial: 6 years (2021–2026), po
 | Looks good enough for the hornof.org projects page | Luke signs off on the live site on a laptop and a phone |
 | Pleasant to browse | Every check in section 5 passes on the live site |
 | Shows how the owner keeps it up to date | Luke adds a drawing live in a demo, and it appears in its year within 5 minutes |
-| Proves the apb process | The site is built card by card through apb, and every rough edge in the process is written down on [apb issue 2](https://github.com/hornof/apb/issues/2) |
+| Proves the apb process | The site is built issue by issue through apb, and every rough edge in the process is written down on [apb issue 2](https://github.com/hornof/apb/issues/2) |
 
 ## 3. Who it's for
 - **Visitors:** anyone with the link, including people coming from the hornof.org projects page. No account, nothing to install.
@@ -139,10 +139,10 @@ The backup needs no tool: drag a correctly named file into the year's folder on 
     - **Storage** for uploaded drawings (for example Cloudflare's file storage), or code that commits each upload into the repo.
     - **Server code** (a Cloudflare Worker) to receive uploads.
     - **A login** (for example Cloudflare Access with Google sign-in, free for a few people).
-  - Roughly 2–4 cards, plus security testing. The real artist may want this, since an artist may not use a terminal.
+  - Roughly 2–4 issues, plus security testing. The real artist may want this, since an artist may not use a terminal.
 - **Other things a production site might add:** visitor stats that respect privacy, an RSS feed or email when a drawing is added, a `delete` command for the owner, and automatic backups of the drawings.
 - **Grid / List switch,** as on the Bezsonova gallery: a list view with one bigger drawing per row beside its date (mockup kept in [`mockups/future-desktop-list.png`](mockups/future-desktop-list.png)).
-  - Small: about one card, for a second layout, the switch, and checks in both views.
+  - Small: about one issue, for a second layout, the switch, and checks in both views.
   - Without words per drawing it adds little over the pop-up; showing each drawing's subject would give it a purpose.
 - **"Generate drawings" for the owner:** pick a year or date range and a number, get new placeholder drawings named by date, and import them.
   - A ChatGPT subscription can't be used from a website. It needs a separate pay-as-you-go OpenAI API account: roughly $0.05–$0.21 per image by third-party figures, so about $1.50–$6.50 per 31-drawing year. Check current prices before building.

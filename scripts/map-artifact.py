@@ -41,10 +41,22 @@ def md_links(text):
     return re.findall(r"\]\(([^)\s]+)\)", text)
 
 
+STATES = ("done", "now", "next")
+
+
 def stages(text):
-    """The stages diagram in the file: (label, state) pairs, state being done, now or next."""
+    """The stages diagram in the file: (label, state) pairs, state being done, now or next.
+    Stops if a stage has no state or an unknown one, so no stage can silently go missing."""
     block = re.search(r"```mermaid\n(.*?)```", text, re.S)
-    return re.findall(r"\w+\[([^\]]+)\]:::(\w+)", block.group(1)) if block else []
+    if not block:
+        return []
+    pairs = []
+    for label, state in re.findall(r"\w+\[([^\]]+)\](?::::(\w+))?", block.group(1)):
+        label = label.strip('"')
+        if state not in STATES:
+            sys.exit(f"stage {label!r} needs :::done, :::now or :::next, not {state!r}")
+        pairs.append((label, state))
+    return pairs
 
 
 def stage_strip(pairs):
@@ -60,6 +72,7 @@ def build(text, body, repo, branch, commit, page_url):
     body = re.sub(r'<section[^>]*data-type="mermaid".*?</section>', lambda m: stage_strip(pairs), body, flags=re.S)
     # A link to this page itself does nothing in the artifact, so it becomes plain text there.
     body = re.sub(r'<a href="' + re.escape(page_url) + r'"[^>]*>(.*?)</a>', r"\1", body)
+    body = re.sub(r'\srel="[^"]*"', "", body)  # GitHub adds its own rel; one rel per link
     body = re.sub(r'href="([^"]+)"',
                   lambda m: f'href="{absolute(m.group(1), repo, branch)}" target="_blank" rel="noopener"', body)
     title = re.search(r"^# (.+)$", text, re.M).group(1).replace("`", "")
@@ -120,11 +133,12 @@ code {{ font-size: 13px; background: var(--bg); border: 1px solid var(--line); b
 def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
-    text = open(MAP).read()
-    repo = json.loads(run(["gh", "repo", "view", "--json", "nameWithOwner"]))["nameWithOwner"]
     # Links to repo files point at the branch the artifact is built from, so they work while a PR is open.
     # After the merge, rebuild from main.
     branch = run(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
+    check_source(run(["git", "status", "--porcelain", MAP]), branch)
+    text = open(MAP).read()
+    repo = json.loads(run(["gh", "repo", "view", "--json", "nameWithOwner"]))["nameWithOwner"]
     body = run(["gh", "api", "markdown", "-f", f"text={text}", "-f", "mode=gfm", "-f", f"context={repo}"])
     commit = run(["git", "rev-parse", "--short", "HEAD"]).strip()
     page = build(text, body, repo, branch, commit, sys.argv[2])
@@ -137,9 +151,17 @@ def main():
     print("wrote", sys.argv[1])
 
 
+def check_source(status, branch):
+    """The artifact must match a commit: no unsaved changes to the map, and a real branch."""
+    if status.strip():
+        sys.exit(f"{MAP} has changes that aren't committed; commit them first")
+    if branch == "HEAD":
+        sys.exit("not on a branch; check out a branch first")
+
+
 def repo_files(page, repo, branch):
-    """Paths of the repo files a page links to."""
-    return re.findall(rf'href="https://github.com/{re.escape(repo)}/blob/{re.escape(branch)}/([^"]+)"', page)
+    """Paths of the repo files a page links to, without any #heading part."""
+    return re.findall(rf'href="https://github.com/{re.escape(repo)}/blob/{re.escape(branch)}/([^"#]+)', page)
 
 
 if __name__ == "__main__":

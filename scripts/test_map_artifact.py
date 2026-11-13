@@ -29,7 +29,7 @@ HTML = """<h1>demo: project map</h1>
 <section class="js-render-needs-enrichment" data-type="mermaid"><pre lang="mermaid">flowchart LR</pre></section>
 <table><thead><tr><th>Piece</th><th>What it is</th></tr></thead><tbody>
 <tr><td><a href="PRD.md">PRD</a></td><td>The product doc</td></tr>
-<tr><td><a href="https://example.com">Site</a></td><td>The live site</td></tr>
+<tr><td><a href="https://example.com" rel="nofollow">Site</a></td><td>The live site</td></tr>
 </tbody></table>"""
 
 
@@ -63,7 +63,7 @@ class Build(unittest.TestCase):
         self.assertIn("The map artifact is built", page)
 
     def test_missing_row_is_caught(self):
-        dropped = HTML.replace('<tr><td><a href="https://example.com">Site</a></td><td>The live site</td></tr>', "")
+        dropped = HTML.replace('<tr><td><a href="https://example.com" rel="nofollow">Site</a></td><td>The live site</td></tr>', "")
         with self.assertRaises(SystemExit):
             build(body=dropped)
 
@@ -116,6 +116,45 @@ class Stages(unittest.TestCase):
     def test_diagram_not_replaced_is_caught(self):
         with self.assertRaises(SystemExit):
             build(body=HTML.replace('data-type="mermaid"', 'data-type="other"'))
+
+    def test_stage_without_state_is_caught(self):
+        with self.assertRaises(SystemExit):
+            mp.stages(MD.replace("[Build]:::next", "[Build]"))
+
+    def test_unknown_state_is_caught(self):
+        with self.assertRaises(SystemExit):
+            mp.stages(MD.replace("[Build]:::next", "[Build]:::nxt"))
+
+    def test_quoted_label_loses_its_quotes(self):
+        md = MD.replace("[PRD, gate 1]", '["PRD (gate 1)"]')
+        self.assertIn(("PRD (gate 1)", "now"), mp.stages(md))
+        self.assertIn('<span class="t">PRD (gate 1)</span>', build(md=md))
+
+
+class OneRel(unittest.TestCase):
+    def test_each_link_has_one_rel(self):
+        page = build()
+        self.assertNotIn('rel="nofollow"', page)
+        self.assertEqual(page.count('href="https://example.com" target="_blank" rel="noopener"'), 1)
+
+
+class RepoFilesWithHeadings(unittest.TestCase):
+    def test_heading_part_is_dropped(self):
+        page = '<a href="https://github.com/owner/repo/blob/main/docs/PRD.md#goals">'
+        self.assertEqual(mp.repo_files(page, REPO, BRANCH), ["docs/PRD.md"])
+
+
+class Source(unittest.TestCase):
+    def test_clean_file_on_a_branch_passes(self):
+        mp.check_source("", "main")
+
+    def test_uncommitted_map_is_caught(self):
+        with self.assertRaises(SystemExit):
+            mp.check_source(" M docs/MAP.md\n", "main")
+
+    def test_detached_head_is_caught(self):
+        with self.assertRaises(SystemExit):
+            mp.check_source("", "HEAD")
 
 
 if __name__ == "__main__":
