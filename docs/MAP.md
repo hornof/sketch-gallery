@@ -25,6 +25,7 @@ flowchart LR
 | [docs/drawings.md](drawings.md) | The placeholder drawings: themes by year, samples, how they were made | PRD, then the build |
 | [docs/research/drawing-sources.md](research/drawing-sources.md) | The six drawing sources compared, and why ChatGPT was chosen | PRD; kept for the record |
 | TDD: [issue 8](https://github.com/hornof/sketch-gallery/issues/8) | The TDD's issue on the board | TDD |
+| [docs/TDD.md](TDD.md) | The technical design: stack, data, tests and the issues to build, in order | Drafted for gate 2; then the build |
 | [docs/HISTORY.md](HISTORY.md) | The project's turning points, one entry per stage | A new entry after each stage |
 | [docs/MAP.md](MAP.md) | The map, in the repo. The map artifact is built from it. | Any time |
 | [docs/reviewer-notes.md](reviewer-notes.md) | The human's rulings on past reviews; the reviewer reads it before every review | Every review |
