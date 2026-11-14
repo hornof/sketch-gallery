@@ -166,7 +166,18 @@ Browser tests run on the built site in the automatic tests, using the real drawi
 - `./import` adds all of the folders it's given, or none of them.
 
 ## 12. Issues, in order
-Once this TDD is approved, each item below becomes a GitHub issue on the board. Each one is a single PR that works on its own, built in this order.
+Once this TDD is approved, each item below becomes a GitHub issue on the board. Each one is a single PR that works on its own.
+
+**How the human stays in the loop:**
+- **An issue starts only when the issues it needs are merged.** Each PR starts from main, and only the human merges, so nothing is built on work the human hasn't seen. Issues that don't need each other are built at the same time:
+  - 1, then 2. Everything needs these.
+  - After 2: 3 and 5.
+  - After 3: 4, which reuses 3's code for sending drawings to GitHub.
+  - After 5: 6, 7 and 9.
+  - After 7: 8.
+  - 10 comes last.
+- **What to look at.** From issue 1 on, every PR gets a preview address. Each PR description starts with "What to look at": the preview link and a check that takes a minute or two, for example "open 2025, click a drawing, swipe to the next one".
+- **An early look at 5 and 7.** For 5 (the look of the site) and 7 (the pop-up's feel), the preview link goes on the issue as soon as a first version is up, before the PR is done. The human looks whenever they like, and can flag a wrong direction early. The build doesn't stop to wait.
 
 1. **Setup proof.** A placeholder page made by `build/build.mjs`; automatic tests on every PR; Cloudflare Pages publishing main at `sketch-gallery.hornof.org` and giving each PR a preview address; README's "Using it" section filled in. One tiny change sent through every step to prove it all works (step 7 of the apb TDD skill).
 2. **Drawings in, site data out.** The build reads `drawings/`, enforces the file rules, turns phone photos upright for the thumbnails, removes location from the full-size copies, makes thumbnails of at most 60 KB that keep the drawing's shape, and writes the list of drawings. A few test drawings in `tests/fixtures/` until the real ones arrive. Part of R10 (fast), and the build side of R11 (load a year) and R12 (add one drawing).
