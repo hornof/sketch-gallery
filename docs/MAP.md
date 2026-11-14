@@ -33,7 +33,7 @@ flowchart LR
 | [docs/reviewer-notes.md](reviewer-notes.md) | The human's rulings on past reviews; the reviewer reads it before every review | Every review |
 | [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
-| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR. It runs no tests yet; issue 12 sets up the tests the TDD chose. | Every PR |
+| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR. It runs no tests yet; #12 sets up the tests the TDD chose. | Every PR |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
 ## Claude artifacts
@@ -59,5 +59,5 @@ Folders, and scheduled tasks that run Claude unattended.
 | Piece | What it is | When it's used |
 |---|---|---|
 | ChatGPT | Made the placeholder drawings, driven by Claude in the human's browser | Done |
-| Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org` | Set up in issue 12 |
+| Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org` | Set up in #12 |
 | hornof.org projects page | An entry for this project once it's live | After launch |
