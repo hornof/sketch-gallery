@@ -152,6 +152,7 @@ describe('thumbnails', () => {
     const smaller = await makeThumbnail(src, { maxBytes: first.data.length - 1 });
     expect(smaller.quality).toBeLessThan(first.quality);
     expect(smaller.data.length).toBeLessThan(first.data.length);
+    expect((await makeThumbnail(src, { maxBytes: first.data.length })).quality).toBe(first.quality); // exactly at the limit is fine
   });
 
   it('stop the build when even the lowest quality is too big', async () => {
@@ -160,6 +161,8 @@ describe('thumbnails', () => {
     expect(err).toBeInstanceOf(BuildStopped);
     expect(err.problems.length).toBe(filesUnder(fixtures).length);
     expect(err.problems[0]).toMatch(/^2024\/2024-02-29\.jpg: its thumbnail is still [\d.]+ KB at the lowest quality; the limit is 0\.1 KB$/);
+    expect(err.message).toBe(`The build stopped. Fix these and try again:\n${err.problems.map((p) => `- ${p}`).join('\n')}`);
+    expect(existsSync(out) && filesUnder(out).length).toBe(0);
   });
 });
 
@@ -205,9 +208,15 @@ describe('the build stops', () => {
   });
 
   it("for a file that isn't really a JPEG", async () => {
-    expect(await problemsIn({ '2025/2025-01-01.jpg': 'png', '2025/2025-01-02.jpg': 'just some text' })).toEqual([
+    const cutOff = jpeg.subarray(0, jpeg.length - 10);
+    const noPicture = Buffer.from([0xff, 0xd8, 0xff, 0xfe, 0x00, 0x04, 0x68, 0x69, 0xff, 0xd9]); // start, a comment, end
+    expect(
+      await problemsIn({ '2025/2025-01-01.jpg': 'png', '2025/2025-01-02.jpg': 'just some text', '2025/2025-01-03.jpg': cutOff, '2025/2025-01-04.jpg': noPicture }),
+    ).toEqual([
       "2025/2025-01-01.jpg: isn't really a JPEG",
       "2025/2025-01-02.jpg: isn't really a JPEG",
+      "2025/2025-01-03.jpg: isn't really a JPEG",
+      "2025/2025-01-04.jpg: isn't really a JPEG",
     ]);
   });
 
@@ -216,10 +225,10 @@ describe('the build stops', () => {
   });
 
   it('for anything in the drawings folder that isn\'t a year folder', async () => {
-    expect(await problemsIn({ 'notes.txt': 'hi', 'misc/2025-01-01.jpg': 'jpeg', '2025/2025-01-01.jpg': 'jpeg' })).toEqual([
-      "misc: isn't a year folder like 2025/",
-      "notes.txt: isn't a year folder like 2025/",
-    ]);
+    expect(
+      await problemsIn({ 'notes.txt': 'hi', 'misc/2025-01-01.jpg': 'jpeg', '12025/2025-01-01.jpg': 'jpeg', 'y2025/2025-01-01.jpg': 'jpeg', '2025/2025-01-01.jpg': 'jpeg' }),
+    ).toEqual(["12025: isn't a year folder like 2025/", "misc: isn't a year folder like 2025/", "notes.txt: isn't a year folder like 2025/", "y2025: isn't a year folder like 2025/"]);
+    expect(await problemsIn({ 'notes.txt': 'hi' })).toEqual(["notes.txt: isn't a year folder like 2025/"]);
   });
 
   it('for a folder inside a year folder', async () => {
@@ -230,7 +239,7 @@ describe('the build stops', () => {
 
   it('when there are no drawings at all', async () => {
     expect(await problemsIn({})).toEqual(['there are no year folders, so there are no drawings to show']);
-    expect((await readDrawings(join(tmp('none'), 'missing'))).problems).toEqual([expect.stringMatching(/^the drawings folder .* doesn't exist$/)]);
+    expect(await readDrawings(join(tmp('none'), 'missing'))).toEqual({ drawings: [], problems: [expect.stringMatching(/^the drawings folder .* doesn't exist$/)] });
   });
 
   it('but skips hidden files like .DS_Store, which macOS adds by itself', async () => {
@@ -300,6 +309,13 @@ describe('the list and the files always match', () => {
       }),
       { numRuns: 10 },
     );
+  });
+
+  it('leaves nothing behind from an earlier build when a drawing is removed', async () => {
+    const to = tmp('out');
+    await buildDrawings({ from: makeFolder({ '2024/2024-01-01.jpg': 'jpeg', '2025/2025-01-01.jpg': 'jpeg' }), to });
+    await buildDrawings({ from: makeFolder({ '2025/2025-01-01.jpg': 'jpeg' }), to });
+    expect(filesUnder(to).sort()).toEqual(['drawings.json', 'full/2025/2025-01-01.jpg', 'thumbs/2025/2025-01-01.webp']);
   });
 
   it('copies the drawings without changing the source folder', async () => {

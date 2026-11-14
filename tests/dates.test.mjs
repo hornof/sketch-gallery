@@ -119,8 +119,7 @@ describe('fileName', () => {
     fc.assert(
       fc.property(anyName, (name) => {
         const result = parseFileName(name);
-        fc.pre(result.ok);
-        expect(fileName(result)).toBe(name);
+        if (result.ok) expect(fileName(result)).toBe(name);
       }),
     );
     fc.assert(

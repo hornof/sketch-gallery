@@ -50,6 +50,8 @@ const comment = () => segment(0xfe, Buffer.from('taken at home', 'latin1'));
 const mpf = () => segment(0xe2, Buffer.from('MPF\0 second picture follows', 'latin1'));
 const icc = () => segment(0xe2, Buffer.from('ICC_PROFILE\0\x01\x01 colour data', 'latin1'));
 const adobe = () => segment(0xee, Buffer.from('Adobe\0\x64\0\0\0\0\x01', 'latin1'));
+const jfif = () => segment(0xe0, Buffer.from('JFIF\0\x01\x01\0\0\x01\0\x01\0\0', 'latin1'));
+const app15 = () => segment(0xef, Buffer.from('maker notes', 'latin1'));
 
 const KINDS = {
   exifWithGps: { make: exifWithGps, kept: false },
@@ -59,6 +61,8 @@ const KINDS = {
   mpf: { make: mpf, kept: false },
   icc: { make: icc, kept: true },
   adobe: { make: adobe, kept: true },
+  jfif: { make: jfif, kept: true },
+  app15: { make: app15, kept: false },
 };
 
 function afterStart(jpeg, extra) {
@@ -87,6 +91,11 @@ describe('isJpeg', () => {
     expect(isJpeg(Buffer.from([0xff, 0xd8]))).toBe(false);
     expect(isJpeg(Buffer.alloc(0))).toBe(false);
     expect(isJpeg(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]))).toBe(false);
+    // Each of the three opening bytes matters on its own.
+    expect(isJpeg(Buffer.from([0xff, 0xd8, 0xff]))).toBe(true);
+    expect(isJpeg(Buffer.from([0x00, 0xd8, 0xff]))).toBe(false);
+    expect(isJpeg(Buffer.from([0xff, 0x00, 0xff]))).toBe(false);
+    expect(isJpeg(Buffer.from([0xff, 0xd8, 0x00]))).toBe(false);
   });
 });
 
@@ -144,6 +153,54 @@ describe('keepOnlyOrientation', () => {
     expect(await exifr.gps(out)).toBeUndefined();
     expect((await sharp(out).metadata()).orientation).toBe(6);
     expect((await sharp(out).metadata()).autoOrient).toEqual({ width: 16, height: 24 });
+  });
+
+  it('copies picture data with restart markers and escaped bytes untouched, and stops at the real end', () => {
+    // Hand-made: picture data may hold FF 00 (an escaped FF byte), FF D0 to FF D7
+    // (restart markers) and FF FF fill bytes; none of them ends the picture.
+    const scanHeader = segment(0xda, Buffer.from([1, 1, 0, 0, 63, 0]));
+    const data = Buffer.from([0x12, 0xff, 0x00, 0x34, 0xff, 0xd0, 0x56, 0xff, 0xd7, 0x78, 0xff, 0xff, 0xd3, 0x9a, 0xff, 0x00]);
+    const end = Buffer.from([0xff, 0xd9]);
+    const fill = Buffer.from([0xff, 0xff]); // fill bytes are allowed before any marker
+    const input = Buffer.concat([Buffer.from([0xff, 0xd8]), fill, exifWithGps(), comment(), scanHeader, data, end, Buffer.from('extra picture')]);
+    expect(keepOnlyOrientation(input, undefined).equals(Buffer.concat([Buffer.from([0xff, 0xd8]), scanHeader, data, end]))).toBe(true);
+  });
+
+  it('on a damaged file, either refuses it or still leaves no location behind', async () => {
+    const withGps = afterStart(plain, [exifWithGps(), xmp()]);
+    await fc.assert(
+      fc.asyncProperty(
+        fc.nat({ max: withGps.length }),
+        fc.array(fc.record({ at: fc.nat({ max: withGps.length - 1 }), value: fc.integer({ min: 0, max: 255 }) }), { maxLength: 3 }),
+        async (cut, flips) => {
+          const damaged = Buffer.from(withGps.subarray(0, cut));
+          for (const { at, value } of flips) if (at < damaged.length) damaged[at] = value;
+          let out;
+          try {
+            out = keepOnlyOrientation(damaged, 1);
+          } catch (err) {
+            expect(err.message).toMatch(/isn't a JPEG|cut off/);
+            return;
+          }
+          expect(isJpeg(out)).toBe(true);
+          expect(out.subarray(-2).equals(Buffer.from([0xff, 0xd9]))).toBe(true);
+          // A reader of hidden notes finds no location (a read error counts as nothing found).
+          expect(await exifr.gps(out).catch(() => undefined)).toBeUndefined();
+          const notes = await exifr.parse(out, { xmp: true, gps: true, mergeOutput: false }).catch(() => undefined);
+          expect(JSON.stringify(notes ?? {})).not.toMatch(/GPS|latitude|longitude/i);
+        },
+      ),
+      { numRuns: 500 },
+    );
+  });
+
+  it('writes an orientation note only for the turned values 2 to 8', async () => {
+    for (const orientation of [0, 1, 9, 255, undefined]) {
+      expect(keepOnlyOrientation(plain, orientation).equals(plain), String(orientation)).toBe(true);
+    }
+    for (const orientation of [2, 8]) {
+      expect((await sharp(keepOnlyOrientation(plain, orientation)).metadata()).orientation).toBe(orientation);
+    }
   });
 
   it('refuses a file that isn\'t a JPEG', () => {
