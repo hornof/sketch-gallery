@@ -11,15 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        if: hashFiles('package.json') != ''
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
-      - name: Run test suite
-        run: |
-          if [ -f package.json ]; then
-            npm ci
-            npm test
-          else
-            echo "::warning::No test suite yet (no package.json). Replace this once the TDD picks a stack."
-          fi
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test

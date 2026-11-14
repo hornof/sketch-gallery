@@ -6,7 +6,13 @@ Built with the apb process: https://github.com/hornof/apb
 
 ## Using it
 
-Added once there's something to use.
+You need Node 22 (the version is in `.nvmrc`). From the repo folder:
+
+- `npm install` installs the tools, once.
+- `npm run build` builds the site into `dist/`. Open `dist/index.html` in a browser to see it.
+- `npm test` runs the tests.
+
+GitHub runs the same build and tests on every PR and every push to main.
 
 ## Files
 
@@ -16,7 +22,11 @@ Added once there's something to use.
 | docs/MAP.md | Every piece of the project and where it lives | anyone |
 | docs/drawings.md | The placeholder drawings: themes by year, samples, how they were made; images in docs/drawings/ | the human |
 | docs/research/drawing-sources.md | The six drawing sources compared, and why ChatGPT was chosen; images in docs/research/drawing-sources/ | the human |
-| .github/workflows/ci.yml | The test workflow GitHub runs on every PR | Claude |
+| .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, test | Claude |
+| package.json, package-lock.json | The Node version, the tools the site uses, and the `build` and `test` commands | Claude |
+| .nvmrc | The Node version (22), for the laptop and the automatic tests | Claude |
+| build/build.mjs | Builds the site into `dist/` (not stored in the repo) | Claude |
+| tests/ | The automatic tests, run by `npm test` | Claude |
 | .gitignore | Files git leaves out of the repo | Claude |
 | docs/HISTORY.md | The project's turning points: decisions, surprises, changes of mind. Start here to see why the project looks the way it does | anyone |
 | docs/reviewer-notes.md | The human's rulings on past reviews; the reviewer reads it before every review | Claude |

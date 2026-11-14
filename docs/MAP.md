@@ -33,7 +33,9 @@ flowchart LR
 | [docs/reviewer-notes.md](reviewer-notes.md) | The human's rulings on past reviews; the reviewer reads it before every review | Every review |
 | [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
-| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR. It runs no tests yet; #12 sets up the tests the TDD chose. | Every PR |
+| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the tests on Node 22 | Every PR, every push to main |
+| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`. For now it writes a placeholder page. | Every build |
+| [tests/](../tests/) | The automatic tests, run by `npm test` | Every PR |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
 ## Claude artifacts
