@@ -4,11 +4,11 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** TDD (gate 2), [issue 8](https://github.com/hornof/sketch-gallery/issues/8)
+**Now:** Build, starting with [issue 12](https://github.com/hornof/sketch-gallery/issues/12) (setup proof)
 
 ```mermaid
 flowchart LR
-  s1["PRD input"]:::done --> s2["PRD (gate 1)"]:::done --> s3["TDD (gate 2)"]:::now --> s4["Split the TDD into issues"]:::next --> s5["Build"]:::next --> s6["Review and merge (gate 3)"]:::next --> s7["Check the live product"]:::next
+  s1["PRD input"]:::done --> s2["PRD (gate 1)"]:::done --> s3["TDD (gate 2)"]:::done --> s4["Split the TDD into issues"]:::done --> s5["Build"]:::now --> s6["Review and merge (gate 3)"]:::next --> s7["Check the live product"]:::next
   classDef done fill:#E3EFE9,stroke:#1F5E4A,color:#1F5E4A
   classDef now fill:#1F5E4A,stroke:#1F5E4A,color:#FFFFFF
   classDef next fill:#FFFFFF,stroke:#BBB6AC,color:#55524B
@@ -20,18 +20,20 @@ flowchart LR
 | Repo: [hornof/sketch-gallery](https://github.com/hornof/sketch-gallery) | The code, docs and content. [README.md](../README.md) lists every file and who reads it. | Every stage |
 | Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress: one issue for the PRD and one for the TDD, then one issue per piece of work from the TDD, plus one issue for any other change (like #9) | Every stage |
 | [Open PRs](https://github.com/hornof/sketch-gallery/pulls) | Work waiting for review or merge. GitHub keeps this list current. | Every stage |
+| Build issues: [#12 to #21](https://github.com/hornof/sketch-gallery/issues?q=is%3Aissue+%22TDD+item%22+in%3Atitle) | One issue per item in the TDD's section 12 | The build |
+| [Future work](https://github.com/hornof/sketch-gallery/issues?q=is%3Aissue+label%3A%22future+work%22) | Ideas for later, not part of the current build: issues labeled "future work", not on the board | Any time an idea comes up |
 | PRD input: [issue 2](https://github.com/hornof/sketch-gallery/issues/2) | The human's product details, which Claude used to write the first draft of the PRD. The PRD's issue on the board. | Start |
 | [docs/PRD.md](PRD.md) | The Product Requirements Doc: what the site does and for whom, with mockup screenshots in docs/mockups/ | Approved at gate 1 |
 | [docs/drawings.md](drawings.md) | The placeholder drawings: themes by year, samples, how they were made | PRD, then the build |
 | [docs/research/drawing-sources.md](research/drawing-sources.md) | The six drawing sources compared, and why ChatGPT was chosen | PRD; kept for the record |
-| TDD: [issue 8](https://github.com/hornof/sketch-gallery/issues/8) | The TDD's issue on the board | TDD |
-| [docs/TDD.md](TDD.md) | The technical design: tools, data, tests and the issues to build | Drafted for TDD (gate 2); then the build |
+| TDD: [issue 8](https://github.com/hornof/sketch-gallery/issues/8) | The TDD's issue on the board | TDD (done) |
+| [docs/TDD.md](TDD.md) | The technical design: tools, data, tests and the issues to build | Approved at gate 2; then the build |
 | [docs/HISTORY.md](HISTORY.md) | The project's turning points, one entry per stage | A new entry after each stage |
 | [docs/MAP.md](MAP.md) | The map, in the repo. The map artifact is built from it. | Any time |
 | [docs/reviewer-notes.md](reviewer-notes.md) | The human's rulings on past reviews; the reviewer reads it before every review | Every review |
 | [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
-| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR. It runs no tests yet; the TDD picks the test setup. | Every PR |
+| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR. It runs no tests yet; issue 12 sets up the tests the TDD chose. | Every PR |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
 ## Claude artifacts
@@ -57,5 +59,5 @@ Folders, and scheduled tasks that run Claude unattended.
 | Piece | What it is | When it's used |
 |---|---|---|
 | ChatGPT | Made the placeholder drawings, driven by Claude in the human's browser | Done |
-| Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org` | Set up after the TDD |
+| Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org` | Set up in issue 12 |
 | hornof.org projects page | An entry for this project once it's live | After launch |
