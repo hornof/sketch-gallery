@@ -165,18 +165,18 @@ Browser tests run on the built site in the automatic tests, using the real drawi
 - Every drawing in the list has a thumbnail and a full-size file, and every thumbnail and full-size file belongs to a drawing in the list.
 - `./import` adds all of the folders it's given, or none of them.
 
-## 12. Issues, in order
+## 12. Issues
 Once this TDD is approved, each item below becomes a GitHub issue on the board. Each one is a single PR that works on its own.
 
 **How the human stays in the loop:**
 - **An issue starts only when the issues it needs are merged.** Each PR starts from main, and only the human merges, so nothing is built on work the human hasn't seen. Issues that don't need each other are built at the same time:
   - 1, then 2. Everything needs these.
-  - After 2: 3 and 5.
+  - After 2: 3 and 5. 5 merges only after the real drawings are loaded with 4. Before it merges, the latest main is brought into its branch, so its preview shows them.
   - After 3: 4, which reuses 3's code for sending drawings to GitHub.
   - After 5: 6, 7 and 9.
-  - After 7: 8.
+  - After 6 and 7: 8.
   - 10 comes last.
-- **What to look at.** From issue 1 on, every PR gets a preview address. Each PR description starts with "What to look at": the preview link and a check that takes a minute or two, for example "open 2025, click a drawing, swipe to the next one".
+- **What to look at.** From issue 1 on, every PR gets a preview address. Each PR description starts with "What to look at": the preview link and a check that takes a minute or two, for example "open 2025, click a drawing, swipe to the next one". For 3 and 4, the check is a command to try on the laptop instead of a preview link.
 - **An early look at 5 and 7.** For 5 (the look of the site) and 7 (the pop-up's feel), the preview link goes on the issue as soon as a first version is up, before the PR is done. The human looks whenever they like, and can flag a wrong direction early. The build doesn't stop to wait.
 
 1. **Setup proof.** A placeholder page made by `build/build.mjs`; automatic tests on every PR; Cloudflare Pages publishing main at `sketch-gallery.hornof.org` and giving each PR a preview address; README's "Using it" section filled in. One tiny change sent through every step to prove it all works (step 7 of the apb TDD skill).
@@ -184,7 +184,7 @@ Once this TDD is approved, each item below becomes a GitHub issue on the board. 
 3. **`./add`.** Pulls the latest version first; checks the file; says what it will do and asks for a yes; `--date`, `--replace` and `--yes`; commits and pushes; prints the drawing's link (for example `sketch-gallery.hornof.org/2026/#2026-11-03`); undoes everything if the push fails. R12 (add one drawing).
 4. **`./import`.** Adds one or more year folders in a single commit and push, so loading all six years is one rebuild. All or nothing across every folder. After this PR is merged, the human runs it from the repo folder on the laptop to load the 161 placeholder drawings, which are in a folder next to the repo:
    `./import ../sketch-gallery-placeholders/2021 ../sketch-gallery-placeholders/2022 ../sketch-gallery-placeholders/2023 ../sketch-gallery-placeholders/2024 ../sketch-gallery-placeholders/2025 ../sketch-gallery-placeholders/2026`
-   The human times it against R11 (load a year: live within 5 minutes), so every later preview shows the real drawings and the command gets a real first use. R11 (load a year).
+   The human times it against R11 (load a year: live within 5 minutes), so every preview after that shows the real drawings (5's too, as described above) and the command gets a real first use. R11 (load a year).
 5. **Year pages and grid.** `/YYYY/` pages and the home page; title, description, year menu, grid with dates; fonts and colors, always light; the column counts; thumbnails loading as described in section 5; descriptions for screen readers, the keyboard ring and readable text in the grid; Lighthouse added to the automatic tests. R1 (one page), R2 (year menu, its look), R4 (grid), R9 (phone, tablet and desktop), part of R10 (fast).
 6. **Switching years in place.** The menu changes the grid without loading a new page; year links; Back and Forward between years; the address fix for a year with no drawings. R2 (year menu), R3 (links, for years).
 7. **The pop-up.** PhotoSwipe opening with a zoom from the thumbnail; every way of closing, including Back (opening a drawing adds a history step); double-tap to full size; animation times; no animation when the device asks for less motion; keyboard use in the pop-up. R5 (pop-up), R7 (zoom on a phone), R8 (motion).
