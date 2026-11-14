@@ -1,0 +1,17 @@
+{
+  "name": "sketch-gallery",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A web gallery of drawings, one page per year.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
+  "scripts": {
+    "build": "node build/build.mjs",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^5.1.0"
+  }
+}
