@@ -6,13 +6,14 @@ Built with the apb process: https://github.com/hornof/apb
 
 ## Using it
 
-You need Node 22 (the version is in `.nvmrc`). From the repo folder:
+You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). From the repo folder:
 
 - `npm install` installs the tools, once.
 - `npm run build` builds the site into `dist/`. Open `dist/index.html` in a browser to see it.
-- `npm test` runs the tests.
+- `npm test` runs the site's tests.
+- `python3 scripts/test_map_artifact.py` runs the map script's tests.
 
-GitHub runs the same build and tests on every PR and every push to main.
+GitHub runs the same build and both sets of tests, the site's and the map script's, on every PR and every push to main.
 
 ## Files
 
@@ -22,7 +23,7 @@ GitHub runs the same build and tests on every PR and every push to main.
 | docs/MAP.md | Every piece of the project and where it lives | anyone |
 | docs/drawings.md | The placeholder drawings: themes by year, samples, how they were made; images in docs/drawings/ | the human |
 | docs/research/drawing-sources.md | The six drawing sources compared, and why ChatGPT was chosen; images in docs/research/drawing-sources/ | the human |
-| .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, test | Claude |
+| .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, the site's tests, the map script's tests | Claude |
 | package.json, package-lock.json | The Node version, the tools the site uses, and the `build` and `test` commands | Claude |
 | .nvmrc | The Node version (22), for the laptop and the automatic tests | Claude |
 | build/build.mjs | Builds the site into `dist/` (not stored in the repo) | Claude |
