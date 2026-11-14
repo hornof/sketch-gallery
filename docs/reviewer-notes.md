@@ -14,6 +14,7 @@ The human's rulings on past reviews. The reviewer reads this file before every r
 - The human replies on each inline comment, and on the PR for summary items. (#10)
 - After fixes are pushed, reply on each item with "fixed in commit X" or "not fixed, because …", so nothing is lost when GitHub marks comments as outdated. (#10)
 - Give the context a reader needs: where a thing came from, a concrete example, and how it affects this project. If you can't give a real example, say so; never invent one. (#10)
+- One point per item. When an item has more than one part, list each part as its own bullet. (#10)
 - An obvious fix (like "pull before pushing") goes under High confidence as a plain statement, not a question. (#10)
 - Write "R6 (next and previous)", not just "R6", and say which list "issue 5" belongs to. (#10)
 - Only the human resolves threads. The reviewer and the orchestrator never resolve them. Resolved means the discussion is over, not that the fix is made; the after-fix check covers every item, resolved or not, and reopens any that wasn't fixed. (#10)

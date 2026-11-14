@@ -75,7 +75,7 @@ The owner changes the gallery with a small command-line tool that lives in the r
 
 Every command:
 1. **Checks first:** the date is real, the file is a JPEG, and no drawing exists yet for that date (unless `--replace` is given).
-2. **Says what it will do,** for example "Adding October 3, 2026 to 2026 (now 32 drawings)", and asks for a yes.
+2. **Says what it will do,** for example "Adding November 3, 2026 to 2026 (now 32 drawings)", and asks for a yes.
 3. **Adds the file** to its year's folder, sends it to GitHub, and prints the link where it will appear (`sketch-gallery.hornof.org/2026/#2026-11-03`) with "live in about 2 minutes".
 4. **On any problem,** says exactly what is wrong and how to fix it, and changes nothing. `import` is all or nothing: if any file has a problem, none are added, and every problem is listed.
 

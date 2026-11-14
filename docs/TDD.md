@@ -5,7 +5,7 @@ How the site is built and tested, and the work split into a list of issues. It f
 "R1" to "R14" are the PRD's requirements, numbered as in PRD section 5. Each one's name is given next to it, like "R6 (next and previous)".
 
 ## 1. What the site does
-- **A visitor:** opens a year, scrolls the grid, opens a drawing in the pop-up, steps through the year, closes it, picks another year, shares a link (R1–R10, R14).
+- **A visitor:** opens a year, scrolls the grid, opens a drawing in the pop-up, steps through the year, closes it, picks another year, shares a link (R1 to R10 and R14, the visitor requirements).
 - **The owner:** adds one drawing or a whole year from the laptop: R11 (load a year), R12 (add one drawing). Nobody else can change anything: R13 (only the owner).
 - **Not in this build** (PRD section 9): accounts, comments, search, analytics, an upload page, a database, words per drawing.
 - **Who looks after it:** the human, from a laptop, using GitHub and the Cloudflare website.
@@ -17,18 +17,18 @@ How the site is built and tested, and the work split into a list of issues. It f
 | Size of the drawings | About 90 MB in all, up to 1.2 MB each | Fine for the repo and for Cloudflare Pages, which allows 20,000 files of up to 25 MB each |
 | Thumbnails | One per drawing, each at most 60 KB (R10, fast) | Made automatically every time the site is rebuilt; never stored in the repo |
 | Visitors | A few a day, more after a hornof.org post | Cloudflare's free plan covers it many times over |
-| Rebuilds | One per added drawing or import | Well under the free plan's 500 a month |
+| Rebuilds | One per push to GitHub, including pushes to a PR. A push with many drawings is still one rebuild | Well under the free plan's 500 a month |
 
 ## 3. Tools
 **Plain files on a web host.** Every page is made ahead of time from the files in the repo, and nothing runs on a server. This is the simplest way to build a site, and it's all this one needs: visitors only look, and nothing on the site takes input from them (R13, only the owner).
 
 | Part | Choice | Why |
 |---|---|---|
-| Hosting | Cloudflare Pages, connected to the GitHub repo | Free. Rebuilds the site by itself after every push to main, and gives every PR its own preview address. hornof.org's DNS is already on Cloudflare, so `sketch-gallery.hornof.org` takes one step to set up |
-| Building the pages | A short Node program, `build/build.mjs`, that writes the finished site into a `dist/` folder | The site is one page per year plus a home page; a ready-made site generator would add more than it saves |
+| Hosting | Cloudflare Pages, connected to the GitHub repo | Free. Rebuilds the site by itself after every push to main, and gives every PR its own preview address. hornof.org's address settings are already on Cloudflare, so `sketch-gallery.hornof.org` takes one step to set up |
+| Building the pages | A short program in Node (which runs JavaScript on a computer rather than in a browser), `build/build.mjs`, that writes the finished site into a `dist/` folder | The site is one page per year plus a home page; a ready-made site generator would add more than it saves |
 | Thumbnails | `sharp`, an image library, run during the build | Makes each thumbnail as a WebP file (an image format like JPEG, but smaller), lowering the quality step by step until it's under 60 KB (R10, fast) |
-| Pop-up | PhotoSwipe 5, an open-source pop-up viewer | The PRD names its demo as the feel. It has the zoom from the thumbnail, swiping, pinch and double-tap zoom, keyboard keys, swipe down to close, and a setting that stops at the first and last drawing (R5–R7) |
-| Page code | Plain HTML, CSS and JavaScript, no framework | Switching years and handling links is about 150 lines |
+| Pop-up | PhotoSwipe 5, an open-source pop-up viewer | The PRD names its demo as the feel. It has the zoom from the thumbnail, swiping, pinch and double-tap zoom, keyboard keys, swipe down to close, and a setting that stops at the first and last drawing (R5 (pop-up), R6 (next and previous), R7 (zoom on a phone)) |
+| Page code | Plain HTML, CSS and JavaScript, no ready-made toolkit | Switching years and handling links is about 150 lines |
 | Fonts | Space Grotesk and Inter, stored on the site itself | Loading them from Google would let Google see every visitor; the PRD says no tracking |
 | Owner commands | `./add` and `./import`, Node programs run from the repo folder on the laptop | Same language as the build. The `./` matters: some computers already have a different program called `import` |
 | Node version | 22, written into `package.json` and the Cloudflare settings | The same version on the laptop, in the automatic tests and on Cloudflare |
@@ -36,7 +36,7 @@ How the site is built and tested, and the work split into a list of issues. It f
 **Pop-up settings we change from PhotoSwipe's defaults:**
 - **Slide on buttons and keys.** PhotoSwipe slides to the next drawing only when you swipe. Clicking an arrow button or pressing an arrow key makes it jump with no animation. R6 (next and previous) asks for a slide every time, so we add a few lines that make the buttons and keys slide too.
 - **Double-tap zooms to full size.** By default, a double-tap zooms to 2.5 times the screen-fitted size, which on a phone shows about two-thirds of the drawing's detail. We set it to zoom to the drawing's full size (R7, zoom on a phone).
-- **Stop at the ends.** No going from the last drawing back to the first (R6).
+- **Stop at the ends.** No going from the last drawing back to the first (R6, next and previous).
 - **Thumbnails keep the drawing's shape**, so the zoom from thumbnail to pop-up lines up.
 
 ## 4. How it fits together
@@ -60,7 +60,7 @@ flowchart LR
 **Made by the build, never stored in the repo:**
 - `/index.html`: the newest year. `/2021/index.html` … `/2026/index.html`: one page per year.
 - `/thumbs/YYYY/YYYY-MM-DD.webp`: the thumbnails.
-- `/full/YYYY/YYYY-MM-DD.jpg`: the drawings, at full size, with any hidden location and camera details removed. A photo taken with a phone usually records where it was taken; the build drops that. The picture itself is not changed.
+- `/full/YYYY/YYYY-MM-DD.jpg`: the drawings, at full size, with any hidden location removed. A photo taken with a phone usually records where it was taken; the build drops that. The picture itself is not changed, and the hidden note saying which way is up is kept, so browsers show it upright.
 - `/preview.jpg`: the image shown in link previews (1200 × 630).
 - A short list of every year's drawings, included in each page, so switching years needs no extra download.
 
@@ -98,22 +98,22 @@ Nothing is stored in a visitor's browser or on a server.
 ## 7. Targets
 | Target | Value | How it's checked |
 |---|---|---|
-| Speed | A year with 31 drawings is usable within 2 seconds on a phone connection ("Fast 4G" in the browser's test settings); Lighthouse, Google's page-speed check, scores at least 90 on mobile (R10, fast) | Lighthouse runs in the automatic tests on every PR from issue 5 on, and once on the live site |
-| Thumbnail size | At most 60 KB each (R10) | The build stops if any is bigger, and a test checks every thumbnail |
+| Speed | A year with 31 drawings is usable within 2 seconds on a phone connection ("Fast 4G" in the browser's test settings); Lighthouse, Google's page-speed check, scores at least 90 on mobile (R10, fast) | Lighthouse runs in the automatic tests on every PR from issue 5 in section 12 (year pages and grid) on, and once on the live site |
+| Thumbnail size | At most 60 KB each (R10, fast) | The build stops if any is bigger, and a test checks every thumbnail |
 | Motion | Every animation finishes within 350 ms; none play when the device asks for less motion (R8, motion) | Browser tests time each animation |
 | Uptime | Whatever Cloudflare gives | Not tested |
 | Recovery | The repo holds everything | Rebuild the site from a fresh copy of the repo once, before launch |
-| Security | Visitors can only look; only people with push access to the repo can change anything (R13) | See section 9 |
+| Security | Visitors can only look; only people with push access to the repo can change anything (R13, only the owner) | See section 9 |
 | Cost | $0 a month; the domain is already paid for | The Cloudflare and GitHub usage pages, once after launch |
 | Undoing a bad release | Undo the commit, or pick an earlier version in Cloudflare | Tried once before launch |
 
 ## 8. What could go wrong
 | Problem | Effect | What we do | How we catch it early |
 |---|---|---|---|
-| Thumbnails can't get under 60 KB and still look good | R10 fails, or thumbnails look smudged | Make them fewer pixels first, then lower the quality | The build's size check, and the human looks at the grid with the real drawings in issue 5's preview |
+| Thumbnails can't get under 60 KB and still look good | R10 (fast) fails, or thumbnails look smudged | Make them fewer pixels first, then lower the quality | The build's size check, and the human looks at the grid with the real drawings in the preview of issue 5 in section 12 (year pages and grid) |
 | A badly named file reaches main, for example dragged in on github.com | The build stops | Cloudflare keeps the last good version live; the automatic tests on main name the bad file | A test with a badly named file checks that the build stops with a clear message |
 | `./add` can't push, for example no network, or someone added a drawing on github.com since the last pull | The laptop and GitHub disagree | `./add` first pulls the latest version from GitHub. If the push still fails, it undoes its commit and copy and says what went wrong | Tests that fake a failed push and a changed main |
-| Pinch zoom can't be tested automatically | R7 (zoom on a phone) isn't fully covered by the automatic tests | Double-tap zoom is tested automatically; pinch is checked by hand on a real phone | The launch checks (the last issue) |
+| Pinch zoom can't be tested automatically | R7 (zoom on a phone) isn't fully covered by the automatic tests | Double-tap zoom is tested automatically; pinch is checked by hand on a real phone | Issue 10 in section 12 (launch checks) |
 
 ## 9. Security
 - **Who can do what:** visitors look. The owner, anyone with push access to the repo, adds or replaces drawings. Nobody else can change anything.
@@ -125,7 +125,7 @@ Nothing is stored in a visitor's browser or on a server.
 - **Tests:** the site has no form and no server code, and the browser rules are present on the live site.
 
 ## 10. Cost
-$0 a month on the free plans of Cloudflare Pages and GitHub. The thing that grows fastest is rebuilds, one per added drawing, far below the 500-a-month limit.
+$0 a month on the free plans of Cloudflare Pages and GitHub. The thing that grows fastest is rebuilds, one per push to GitHub, far below the 500-a-month limit.
 
 ## 11. Test plan
 **Tools:**
@@ -149,13 +149,14 @@ Browser tests run on the built site in the automatic tests, using the real drawi
 | R8 (motion) | Every animation, including the slide on buttons and keys, finishes within 350 ms; none play when the device asks for less motion | Browser | Every PR |
 | R9 (phone, tablet and desktop) | No sideways scrolling at 375, 768 and 1440 px; every button at least 44 px; all browser tests pass in Chromium, Firefox and WebKit | Browser | Every PR |
 | R10 (fast) | Every thumbnail at most 60 KB; Lighthouse mobile score at least 90; a year usable within 2 seconds on Fast 4G; the pop-up shows the full-size drawing | Build check, Lighthouse, browser | Every PR, and once on the live site |
-| R11 (load a year) | A whole folder is added in one commit; a folder with one badly named file adds nothing and names that file; every problem is listed | Function tests with random inputs, plus loading the real drawings | Every PR; the real load is timed by hand |
+| R11 (load a year) | A whole folder is added in one commit; a folder with one badly named file adds nothing and names that file; every problem is listed | Function tests with random inputs, plus the human loading the real drawings | Every PR; the real load is timed by hand |
 | R12 (add one drawing) | Lands in the right year and place; other drawings unchanged; an existing date refused without `--replace`; `--date` renames the file; a new year appears in the menu; the message and printed link match the PRD | Function tests with random inputs, plus the live demo | Every PR; live within 5 minutes, timed by hand |
 | R13 (only the owner) | The site has no form and no server code; a push from an account without access is refused (GitHub's own check, tried once by hand) | Build check, plus a check by hand | Every PR; once before launch |
 | R14 (link preview) | The page has the title, description and preview image, and the image exists | Build check | Every PR; iMessage and Slack by hand at launch |
 | Accessibility (PRD section 6) | Everything works with the keyboard (Tab moves between the years and drawings, Enter opens one); the item Tab has reached shows a visible ring; every drawing has a description for screen readers; text is dark enough to read easily (checked with axe, an accessibility checker) | Browser | Every PR |
 | Never shown to a visitor (PRD section 6) | A year with no drawings isn't in the menu (the build refuses an empty year folder); there's no login anywhere; a bad drawing link opens its year instead of an error page | Build check and browser | Every PR |
 | Always light (PRD section 6) | With the device set to dark mode, the page stays light | Browser | Every PR |
+| Phone photos (section 5) | A test drawing made like a sideways phone photo with a location in it: its thumbnail is upright, the list has its upright width and height, and the full-size copy has no location but still shows upright | Build check | Every PR |
 
 **Rules tried against many random inputs:**
 - Any file name either becomes a real date or is refused with a message.
@@ -168,10 +169,10 @@ Browser tests run on the built site in the automatic tests, using the real drawi
 Once this TDD is approved, each item below becomes a GitHub issue on the board. Each one is a single PR that works on its own, built in this order.
 
 1. **Setup proof.** A placeholder page made by `build/build.mjs`; automatic tests on every PR; Cloudflare Pages publishing main at `sketch-gallery.hornof.org` and giving each PR a preview address; README's "Using it" section filled in. One tiny change sent through every step to prove it all works (step 7 of the apb TDD skill).
-2. **Drawings in, site data out.** The build reads `drawings/`, enforces the file rules, turns phone photos upright, removes location and camera details, makes thumbnails of at most 60 KB that keep the drawing's shape, and writes the list of drawings. A few test drawings in `tests/fixtures/` until the real ones arrive. Part of R10 (fast), and the build side of R11 and R12.
+2. **Drawings in, site data out.** The build reads `drawings/`, enforces the file rules, turns phone photos upright for the thumbnails, removes location from the full-size copies, makes thumbnails of at most 60 KB that keep the drawing's shape, and writes the list of drawings. A few test drawings in `tests/fixtures/` until the real ones arrive. Part of R10 (fast), and the build side of R11 (load a year) and R12 (add one drawing).
 3. **`./add`.** Pulls the latest version first; checks the file; says what it will do and asks for a yes; `--date`, `--replace` and `--yes`; commits and pushes; prints the drawing's link (for example `sketch-gallery.hornof.org/2026/#2026-11-03`); undoes everything if the push fails. R12 (add one drawing).
-4. **`./import` and the real drawings.** `./import`, all or nothing. Then load all six years of placeholder drawings with it, so every later preview shows the real drawings and the commands get a real first use. R11 (load a year).
-5. **Year pages and grid.** `/YYYY/` pages and the home page; title, description, year menu, grid with dates; fonts and colors, always light; the column counts; thumbnails loading as described in section 5; descriptions for screen readers, the keyboard ring and readable text in the grid; Lighthouse added to the automatic tests. R1 (one page), R2 (year menu, its look), R4 (grid), R9 (devices), part of R10.
+4. **`./import`.** Adds one or more year folders in a single commit and push, so loading all six years (`./import 2021 2022 2023 2024 2025 2026`) is one rebuild. All or nothing across every folder. After this PR is merged, the human runs it from the laptop to load the 161 placeholder drawings and times it for R11, so every later preview shows the real drawings and the command gets a real first use. R11 (load a year).
+5. **Year pages and grid.** `/YYYY/` pages and the home page; title, description, year menu, grid with dates; fonts and colors, always light; the column counts; thumbnails loading as described in section 5; descriptions for screen readers, the keyboard ring and readable text in the grid; Lighthouse added to the automatic tests. R1 (one page), R2 (year menu, its look), R4 (grid), R9 (phone, tablet and desktop), part of R10 (fast).
 6. **Switching years in place.** The menu changes the grid without loading a new page; year links; Back and Forward between years; the address fix for a year with no drawings. R2 (year menu), R3 (links, for years).
 7. **The pop-up.** PhotoSwipe opening with a zoom from the thumbnail; every way of closing, including Back (opening a drawing adds a history step); double-tap to full size; animation times; no animation when the device asks for less motion; keyboard use in the pop-up. R5 (pop-up), R7 (zoom on a phone), R8 (motion).
 8. **Next, previous and drawing links.** The slide on buttons, keys and swipes, timed against 350 ms and switched off when the device asks for less motion; stopping at the ends; counter and caption; drawing links like `/2025/#2025-10-07`. R6 (next and previous), R3 (links, for drawings), R8 (motion).
