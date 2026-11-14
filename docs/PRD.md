@@ -53,7 +53,7 @@ Each requirement ends with the check that proves it.
 ### Visitor
 1. **One page.** A title ("Sketch Gallery"), the line "This gallery displays drawings made over several years.", a year menu, and the drawings. The site names no artist and no person. *Check: the page text contains no personal names.*
 2. **Year menu:** `2026 | 2025 | 2024 | 2023 | 2022 | 2021`, newest first, current year underlined. The newest year shows by default. Clicking a year **replaces** the drawings in place: no new page load, no jump down the page. *Check: clicking each year shows exactly that year's count (31, or 6 for 2024); the scroll position resets to the top of the grid.*
-3. **Links per year and per drawing:** each year has its own URL (`/2025/`) and each drawing too (`/2025/#7`), so hornof.org or a message can link straight to one. Back and Forward move between years and open or closed drawings. *Check: pasting each URL into a fresh tab opens that year or that drawing.*
+3. **Links per year and per drawing:** each year has its own URL (`/2025/`) and each drawing too (`/2025/#2025-10-07`), so hornof.org or a message can link straight to one. Back and Forward move between years and open or closed drawings. *Check: pasting each URL into a fresh tab opens that year or that drawing.*
 4. **Grid:** uniform portrait thumbnails in date order, each with its date ("October 7"). The grid has 2 columns at phone width and grows to 6 on a wide desktop. *Check: column count at 375, 768 and 1440 px is 2, 3–4 and 6.*
 5. **Pop-up viewer:** clicking a thumbnail grows it into a large view over a dark background (a short zoom from the thumbnail). Closing it by X, Esc, a click on the dark area, Back, or a downward swipe on a phone shrinks it back to the same spot in the grid. *Check: each close method returns to the grid at the same scroll position.*
 6. **Next and previous in the pop-up:** on-screen arrows, keyboard arrows, and swipe on a phone. All three **slide** to the next drawing with an animation; none swaps instantly. It stays within the year, and there is **no wraparound**: the first drawing has no left arrow, the last has no right arrow, and a swipe past either end bounces back. A counter reads "7 / 31" and a caption gives the full date ("October 7, 2026"). *Check: each gesture, forward and back, lands on the right drawing; the slide animation runs for the arrow buttons and keys, not only for swipe; the arrows hide at the ends.*
@@ -63,7 +63,7 @@ Each requirement ends with the check that proves it.
 10. **Fast:** *Check: a 31-drawing year is usable within 2 s on throttled "Fast 4G"; Lighthouse mobile performance ≥ 90; each thumbnail ≤ 60 KB (the site makes small thumbnails itself; the full-size files have no limit); the pop-up shows the original file at full resolution.*
 
 ### Owner
-The owner changes the gallery with a small command-line tool that lives in the repo and runs on the laptop, from the repo folder. Each drawing's date is its file name, `YYYY-MM-DD.jpg`. That name is the only source of the date: it sets the caption, the order and the link (`2025-10-07.jpg` → "October 7", `/2025/#7`). File timestamps are ignored.
+The owner changes the gallery with a small command-line tool that lives in the repo and runs on the laptop, from the repo folder. Each drawing's date is its file name, `YYYY-MM-DD.jpg`. That name is the only source of the date: it sets the caption, the order and the link (`2025-10-07.jpg` → "October 7", `/2025/#2025-10-07`). File timestamps are ignored.
 
 | Command | What it does |
 |---|---|
@@ -76,7 +76,7 @@ The owner changes the gallery with a small command-line tool that lives in the r
 Every command:
 1. **Checks first:** the date is real, the file is a JPEG, and no drawing exists yet for that date (unless `--replace` is given).
 2. **Says what it will do,** for example "Adding October 3, 2026 to 2026 (now 32 drawings)", and asks for a yes.
-3. **Adds the file** to its year's folder, sends it to GitHub, and prints the link where it will appear (`sketch-gallery.hornof.org/2026/#3`) with "live in about 2 minutes".
+3. **Adds the file** to its year's folder, sends it to GitHub, and prints the link where it will appear (`sketch-gallery.hornof.org/2026/#2026-11-03`) with "live in about 2 minutes".
 4. **On any problem,** says exactly what is wrong and how to fix it, and changes nothing. `import` is all or nothing: if any file has a problem, none are added, and every problem is listed.
 
 The backup needs no tool: drag a correctly named file into the year's folder on github.com.
