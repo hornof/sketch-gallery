@@ -34,8 +34,10 @@ flowchart LR
 | [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests | Every PR, every push to main |
-| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`. For now it writes a placeholder page. | Every build |
+| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size drawings and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`. The page is still a placeholder. | Every build |
 | [tests/](../tests/) | The site's automatic tests, run by `npm test` | Every PR, every push to main |
+| [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The build uses them until `drawings/` exists. | Every PR, until the real drawings are loaded |
+| [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name and drawing code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
 ## Claude artifacts

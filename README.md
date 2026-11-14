@@ -9,8 +9,10 @@ Built with the apb process: https://github.com/hornof/apb
 You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). From the repo folder:
 
 - `npm install` installs the tools, once.
-- `npm run build` builds the site into `dist/`. Open `dist/index.html` in a browser to see it.
+- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. Open `dist/index.html` in a browser to see the site, and `dist/drawings.json` for the list of drawings.
 - `npm test` runs the site's tests.
+- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name and drawing code and checks that a test catches each one. It takes about a minute.
+- `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.
 
 GitHub runs the same build and both sets of tests, the site's and the map script's, on every PR and every push to main.
@@ -27,7 +29,12 @@ GitHub runs the same build and both sets of tests, the site's and the map script
 | package.json, package-lock.json | The Node version, the tools the site uses, and the `build` and `test` commands | Claude |
 | .nvmrc | The Node version (22), for the laptop and the automatic tests | Claude |
 | build/build.mjs | Builds the site into `dist/` (not stored in the repo) | Claude |
+| build/drawings.mjs | Reads the drawings folder, checks the file rules, makes the thumbnails, the full-size copies and the list of drawings | Claude |
+| build/dates.mjs | Turns a file name like `2025-10-07.jpg` into a date and back, and writes labels like "October 7" | Claude |
+| build/jpeg.mjs | Removes hidden notes, like the place a photo was taken, from the full-size copies, keeping only which way is up | Claude |
 | tests/ | The site's automatic tests, run by `npm test` | Claude |
+| tests/fixtures/ | Test drawings, used until the real ones are in `drawings/`, and `make-fixtures.mjs`, which makes them | Claude |
+| stryker.config.json | Settings for Stryker, run by `npm run mutation` | Claude |
 | .gitignore | Files git leaves out of the repo | Claude |
 | docs/HISTORY.md | The project's turning points: decisions, surprises, changes of mind. Start here to see why the project looks the way it does | anyone |
 | docs/reviewer-notes.md | The human's rulings on past reviews; the reviewer reads it before every review | Claude |
