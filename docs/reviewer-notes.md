@@ -34,3 +34,4 @@ The human's rulings on past reviews. The reviewer reads this file before every r
 - Commits made before a new rule are not rewritten to follow it. (#7)
 - A drawing's link is `/YYYY/#YYYY-MM-DD`; the PRD's link examples were changed by the human's choice. (#10)
 - Alt text is the date only; there is no subjects file. (#10)
+- LOG.md is append-only for its words. A formatting fix that leaves the words unchanged (a leading `- `, backticks) is allowed on old entries. (#24)
