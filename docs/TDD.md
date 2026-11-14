@@ -1,4 +1,6 @@
-# TDD — sketch-gallery   (status: DRAFT)
+# TDD — sketch-gallery   (status: APPROVED by Luke, 2026-11-14)
+
+From here on, this wording changes only when Luke explicitly chooses to change it.
 
 How the site is built and tested, and the work split into a list of issues. It follows the approved [PRD](PRD.md).
 
