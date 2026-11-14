@@ -27,7 +27,7 @@ GitHub runs the same build and both sets of tests, the site's and the map script
 | package.json, package-lock.json | The Node version, the tools the site uses, and the `build` and `test` commands | Claude |
 | .nvmrc | The Node version (22), for the laptop and the automatic tests | Claude |
 | build/build.mjs | Builds the site into `dist/` (not stored in the repo) | Claude |
-| tests/ | The automatic tests, run by `npm test` | Claude |
+| tests/ | The site's automatic tests, run by `npm test` | Claude |
 | .gitignore | Files git leaves out of the repo | Claude |
 | docs/HISTORY.md | The project's turning points: decisions, surprises, changes of mind. Start here to see why the project looks the way it does | anyone |
 | docs/reviewer-notes.md | The human's rulings on past reviews; the reviewer reads it before every review | Claude |
