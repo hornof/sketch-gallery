@@ -15,6 +15,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
+  // Some tests visit every year page; with a full year of drawings that takes longer than the 30-second default.
+  timeout: 60_000,
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
   use: { baseURL: 'http://localhost:4173' },
   projects: browsers.flatMap((browserName) =>

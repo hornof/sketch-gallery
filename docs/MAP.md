@@ -33,9 +33,10 @@ flowchart LR
 | [docs/reviewer-notes.md](reviewer-notes.md) | The human's rulings on past reviews; the reviewer reads it before every review | Every review |
 | [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
-| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests | Every PR, every push to main |
-| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`. The page is still a placeholder. | Every build |
-| [tests/](../tests/) | The site's automatic tests, run by `npm test` | Every PR, every push to main |
+| [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests; the browser tests and Lighthouse run beside them | Every PR, every push to main |
+| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`; then the home page and one page per year, made by `build/pages.mjs` | Every build |
+| [tests/](../tests/) | The site's automatic tests, run by `npm test`, and the browser tests in `tests/browser/`, run by `npm run test:browser` in Chromium, Firefox and WebKit at 375, 768 and 1440 px | Every PR, every push to main |
+| [playwright.config.mjs](../playwright.config.mjs), [lighthouserc.json](../lighthouserc.json) | Settings for the browser tests, and for Lighthouse (Google's page-speed check, which must score at least 90 on a phone) | Every PR, every push to main |
 | [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The build uses them until `drawings/` exists. | Every PR, until the real drawings are loaded |
 | [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name and drawing code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
@@ -64,5 +65,5 @@ Folders, and scheduled tasks that run Claude unattended.
 | Piece | What it is | When it's used |
 |---|---|---|
 | ChatGPT | Made the placeholder drawings, driven by Claude in the human's browser | Done |
-| Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org` | Set up in #12 |
+| Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org`, plus a preview address for every branch, like `year-pages.sketch-gallery.pages.dev` | Set up in #12 |
 | hornof.org projects page | An entry for this project once it's live | After launch |

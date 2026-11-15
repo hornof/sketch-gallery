@@ -9,13 +9,16 @@ Built with the apb process: https://github.com/hornof/apb
 You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stryker asks for Node 22.18 or later; on an older 22 it warns but runs. From the repo folder:
 
 - `npm install` installs the tools, once.
-- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. Open `dist/index.html` in a browser to see the site, and `dist/drawings.json` for the list of drawings.
+- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. `npm run build -- --drawings <folder>` builds from another folder laid out the same way.
+- `npm run serve` shows the built site at http://localhost:4173/, the way Cloudflare serves it. `dist/drawings.json` is the list of drawings.
 - `npm test` runs the site's tests.
+- `npm run test:browser` runs the browser tests on the built site: Chromium, Firefox and WebKit at 375, 768 and 1440 px wide. The first time, `npx playwright install chromium firefox webkit` downloads the browsers. After building with `--drawings <folder>`, run `DRAWINGS=<folder> npm run test:browser` so the tests expect that folder's drawings.
+- `npm run lighthouse` runs Lighthouse, Google's page-speed check, on the built site, as a phone would see it, and fails below 90 for speed or accessibility. `node scripts/lighthouse-scores.mjs` prints the scores. It needs Chrome and Node 22.19 or later.
 - `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name and drawing code and checks that a test catches each one. It takes about a minute.
 - `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.
 
-GitHub runs the same build and both sets of tests, the site's and the map script's, on every PR and every push to main.
+GitHub runs the build, the site's tests, the map script's tests, the browser tests and Lighthouse on every PR and every push to main.
 
 ## Files
 
@@ -25,14 +28,18 @@ GitHub runs the same build and both sets of tests, the site's and the map script
 | docs/MAP.md | Every piece of the project and where it lives | anyone |
 | docs/drawings.md | The placeholder drawings: themes by year, samples, how they were made; images in docs/drawings/ | the human |
 | docs/research/drawing-sources.md | The six drawing sources compared, and why ChatGPT was chosen; images in docs/research/drawing-sources/ | the human |
-| .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, the site's tests, the map script's tests | Claude |
+| .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, the site's tests, the map script's tests, the browser tests and Lighthouse | Claude |
+| playwright.config.mjs | Settings for the browser tests: which browsers and widths | Claude |
+| lighthouserc.json | Settings for Lighthouse: which page, and the lowest scores allowed | Claude |
+| scripts/lighthouse-scores.mjs | Prints the Lighthouse scores, and adds them to the summary of GitHub's test run | Claude |
 | package.json, package-lock.json | The Node version, the tools the site uses, and the `build` and `test` commands | Claude |
 | .nvmrc | The Node version (22), for the laptop and the automatic tests | Claude |
 | build/build.mjs | Builds the site into `dist/` (not stored in the repo) | Claude |
+| build/pages.mjs | Writes the home page and one page per year, and puts the fonts on the site | Claude |
 | build/drawings.mjs | Reads the drawings folder, checks the file rules, makes the thumbnails, the full-size copies and the list of drawings | Claude |
 | build/dates.mjs | Turns a file name like `2025-10-07.jpg` into a date and back, and writes labels like "October 7" | Claude |
 | build/jpeg.mjs | Removes hidden notes, like the place a photo was taken, from the full-size copies, keeping only which way is up | Claude |
-| tests/ | The site's automatic tests, run by `npm test` | Claude |
+| tests/ | The site's automatic tests, run by `npm test`; the browser tests in tests/browser/, run by `npm run test:browser`; and tests/serve.mjs, which serves `dist/` the way Cloudflare does | Claude |
 | tests/fixtures/ | Test drawings, used until the real ones are in `drawings/`, and `make-fixtures.mjs`, which makes them | Claude |
 | stryker.config.json | Settings for Stryker, run by `npm run mutation` | Claude |
 | .gitignore | Files git leaves out of the repo | Claude |
