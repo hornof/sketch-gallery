@@ -15,14 +15,14 @@ You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stry
   - `--replace` replaces the drawing already there for that date. Without it, `./add` refuses a date that already has a drawing.
   - `--yes` doesn't ask before adding.
   - `./add --help` lists these.
-- `./import ../drawings/2024 ../drawings/2025` adds one or more year folders in one commit and sends them to GitHub, so loading several years is one rebuild of the site. Each folder is named after its year and holds only drawings named by date. Run it on main. Like `./add`, it gets the latest version from GitHub first, checks every file, says what it will do and asks for a yes. It's all or nothing: if any file in any folder has a problem, it lists every problem and adds nothing.
+- `./import ../my-drawings/2024 ../my-drawings/2025` adds one or more year folders in one commit and sends them to GitHub, so loading several years is one rebuild of the site. Each folder is named after its year and holds only drawings named by date. Run it on main. Like `./add`, it gets the latest version from GitHub first, checks every file, says what it will do and asks for a yes. It's all or nothing: if any file in any folder has a problem, it lists every problem and adds nothing.
   - `--replace` replaces drawings already there for the same dates. Without it, `./import` refuses them.
   - `--yes` doesn't ask before adding.
   - `./import --help` lists these.
 - `npm run try-add` tries `./add` safely: it runs the real `./add` code on a throwaway copy of the repo in a temporary folder, with a stand-in for GitHub there too. `npm run try-add -- --date 2026-11-03` tries a date that already has a drawing; add `--replace` to replace it.
-- `npm run try-import` tries `./import` the same way, on two sample year folders. `npm run try-import -- --bad` adds two badly named files to them, to see every problem listed and nothing added. `npm run try-import -- <folder> <folder>` imports your own year folders into the throwaway copy.
+- `npm run try-import` tries `./import` the same way, on two sample year folders. `npm run try-import -- --bad` adds two badly named files to them, to see every problem listed and nothing added. `npm run try-import -- <folder> <folder>` imports your own year folders into the throwaway copy, starting, like main today, with no drawings.
 - `npm test` runs the site's tests.
-- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name, drawing, `./add` and `./import` code and checks that a test catches each one. It takes about 10 minutes.
+- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name, drawing, `./add` and `./import` code and checks that a test catches each one. It takes 10 to 30 minutes.
 - `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.
 
