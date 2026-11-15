@@ -1,7 +1,7 @@
 // Year pages (#16): the build turns the list of drawings into one page per year
 // plus a home page showing the newest year. These tests read the HTML the build
 // writes; the browser tests in tests/browser/ check how it looks and behaves.
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -31,10 +31,19 @@ function listFrom(dates) {
   });
 }
 
-const dateArb = fc
-  .date({ min: new Date('2000-01-01T00:00:00Z'), max: new Date('2030-12-31T00:00:00Z'), noInvalidDate: true })
-  .map((d) => d.toISOString().slice(0, 10));
-const listArb = fc.uniqueArray(dateArb, { minLength: 1, maxLength: 60 }).map(listFrom);
+// Random lists draw their dates from one or two years, so most years have more
+// drawings than load right away, like a real year of up to 31.
+const yearArb = fc.integer({ min: 2000, max: 2030 });
+const dateIn = (years) =>
+  fc
+    .tuple(fc.constantFrom(...years), fc.integer({ min: 0, max: 364 }))
+    .map(([y, day]) => new Date(Date.UTC(y, 0, 1 + day)).toISOString().slice(0, 10));
+const listArb = fc
+  .uniqueArray(yearArb, { minLength: 1, maxLength: 2 })
+  .chain((years) => fc.uniqueArray(dateIn(years), { minLength: 1, maxLength: 60 }))
+  .map(listFrom);
+// A full October: 31 drawings in one year.
+const october = listFrom(Array.from({ length: 31 }, (_, i) => `2025-10-${String(i + 1).padStart(2, '0')}`));
 
 // Pieces of a page, read with patterns that match the markup the build writes.
 const menuYears = (html) => [...html.matchAll(/<a href="\/(\d{4})\/"/g)].map((m) => Number(m[1]));
@@ -68,22 +77,45 @@ describe('renderPage', () => {
             expect(html).toContain(`>${d.label}<`);
           }
           const n = mine.length;
-          expect(html).toContain(`${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}`);
+          expect(html).toContain(`<h2 class="count">${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}</h2>`);
         }
       }),
     );
   });
 
   it('loads the first thumbnails right away and the rest only when scrolled near', () => {
-    fc.assert(
-      fc.property(listArb, (list) => {
-        const year = list[0].year;
+    const check = (list) => {
+      for (const year of new Set(list.map((d) => d.year))) {
         const tags = imgs(renderPage({ year, list }));
         tags.forEach((tag, i) => {
           if (i < EAGER_THUMBS) expect(tag).not.toContain('loading="lazy"');
           else expect(tag).toContain('loading="lazy"');
+          if (i === 0) expect(tag).toContain('fetchpriority="high"');
+          else expect(tag).not.toContain('fetchpriority');
         });
-        expect(tags[0]).toContain('fetchpriority="high"');
+      }
+    };
+    fc.assert(fc.property(listArb, check));
+    check(october);
+  });
+
+  it('a full year of 31: exactly 4 load right away and 27 wait', () => {
+    const tags = imgs(renderPage({ year: 2025, list: october }));
+    expect(EAGER_THUMBS).toBe(4);
+    expect(tags).toHaveLength(31);
+    expect(tags.filter((t) => t.includes('loading="lazy"'))).toHaveLength(27);
+  });
+
+  it('the browser tab is titled "Sketch Gallery" on the home page and "2025 · Sketch Gallery" on a year page', () => {
+    fc.assert(
+      fc.property(listArb, (list) => {
+        const years = [...new Set(list.map((d) => d.year))].sort((a, b) => b - a);
+        for (const year of years) {
+          expect(renderPage({ year, list })).toContain(`<title>${year} · Sketch Gallery</title>`);
+        }
+        const home = renderPage({ year: years[0], list, home: true });
+        expect(home).toContain('<title>Sketch Gallery</title>');
+        expect(home.match(/<title>/g)).toHaveLength(1);
       }),
     );
   });
@@ -113,7 +145,23 @@ describe('writeSite', () => {
     for (const year of years) {
       expect(readFileSync(join(to, String(year), 'index.html'), 'utf8')).toBe(renderPage({ year, list }));
     }
-    expect(readFileSync(join(to, 'index.html'), 'utf8')).toBe(renderPage({ year: years[0], list }));
+    expect(readFileSync(join(to, 'index.html'), 'utf8')).toBe(renderPage({ year: years[0], list, home: true }));
+  });
+
+  it('a year removed since the last build leaves no page behind; thumbnails, full-size copies and fonts stay', () => {
+    const to = mkdtempSync(join(tmpdir(), 'sketch-gallery-site-'));
+    for (const dir of ['thumbs/2024', 'full/2024', 'fonts']) {
+      mkdirSync(join(to, dir), { recursive: true });
+      writeFileSync(join(to, dir, 'keep'), '');
+    }
+    writeSite({ list: listFrom(['2024-10-01', '2025-10-01']), to });
+    expect(existsSync(join(to, '2024', 'index.html'))).toBe(true);
+    writeSite({ list: listFrom(['2025-10-01']), to });
+    expect(existsSync(join(to, '2024'))).toBe(false);
+    expect(existsSync(join(to, '2025', 'index.html'))).toBe(true);
+    expect(existsSync(join(to, 'thumbs', '2024', 'keep'))).toBe(true);
+    expect(existsSync(join(to, 'full', '2024', 'keep'))).toBe(true);
+    expect(existsSync(join(to, 'fonts', 'keep'))).toBe(true);
   });
 
   it('puts the fonts on the site itself, and every font the page asks for is there', async () => {

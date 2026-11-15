@@ -5,10 +5,13 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { drawingsByYear, fullDate, monthDay } from './source.mjs';
+import { EAGER_THUMBS } from '../../build/pages.mjs';
 
 const byYear = drawingsByYear();
 const years = [...byYear.keys()].sort((a, b) => b - a);
 const newest = years[0];
+// The year with the most drawings: with the real drawings, a full October of 31.
+const biggest = years.reduce((a, b) => (byYear.get(b).length > byYear.get(a).length ? b : a));
 // Every page: the home page shows the newest year.
 const pages = [{ path: '/', year: newest }, ...years.map((year) => ({ path: `/${year}/`, year }))];
 
@@ -36,6 +39,13 @@ test.describe('R1 (one page)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sketch Gallery');
     await expect(page.getByText('This gallery displays drawings made over several years.')).toBeVisible();
     await expect(page).toHaveTitle('Sketch Gallery');
+  });
+
+  test('each year page\'s browser tab names its year, like "2025 · Sketch Gallery"', async ({ page }) => {
+    for (const year of years) {
+      await page.goto(`/${year}/`);
+      await expect(page).toHaveTitle(`${year} · Sketch Gallery`);
+    }
   });
 
   test('the page names no person: every word on it is from the site text, a month or a number', async ({ page }) => {
@@ -97,6 +107,17 @@ test.describe('R2 (year menu: its look)', () => {
     expect(parseFloat(rules[3])).toBeGreaterThan(0);
     expect(parseFloat(rules[3])).toBeLessThanOrEqual(1);
   });
+
+  test('on a phone the years fill the menu\'s full width, on one line, in text at least 18 px (docs/mockups/3-phone-grid.png)', async ({ page }) => {
+    test.skip(page.viewportSize().width >= 560, 'phone width only');
+    await page.goto('/');
+    const nav = await page.getByRole('navigation', { name: 'Years' }).evaluate((n) => n.getBoundingClientRect().toJSON());
+    const links = await menuLinks(page).evaluateAll((as) => as.map((a) => ({ ...a.getBoundingClientRect().toJSON(), size: parseFloat(getComputedStyle(a).fontSize) })));
+    expect(Math.abs(links[0].left - nav.left)).toBeLessThanOrEqual(1);
+    expect(Math.abs(links.at(-1).right - nav.right)).toBeLessThanOrEqual(1);
+    expect(new Set(links.map((l) => Math.round(l.top))).size).toBe(1);
+    for (const l of links) expect(l.size).toBeGreaterThanOrEqual(18);
+  });
 });
 
 test.describe('R4 (grid)', () => {
@@ -126,6 +147,22 @@ test.describe('R4 (grid)', () => {
       expect(new Set(boxes.map(String)).size, path).toBe(1);
     }
   });
+
+  test('each drawing sits inside its tile with a white margin of about 8 px, so no line touches the border', async ({ page }) => {
+    await page.goto('/');
+    const gaps = await tiles(page).locator('a').evaluateAll((as) =>
+      as.map((a) => {
+        const t = a.getBoundingClientRect();
+        const i = a.querySelector('img').getBoundingClientRect();
+        const border = parseFloat(getComputedStyle(a).borderTopWidth);
+        return [i.left - t.left, t.right - i.right, i.top - t.top, t.bottom - i.bottom].map((g) => g - border);
+      }),
+    );
+    for (const g of gaps.flat()) {
+      expect(g).toBeGreaterThanOrEqual(7.5);
+      expect(g).toBeLessThanOrEqual(10.5);
+    }
+  });
 });
 
 test.describe('R9 (phone, tablet and desktop)', () => {
@@ -150,8 +187,46 @@ test.describe('R9 (phone, tablet and desktop)', () => {
 });
 
 test.describe('R10 (fast): loading the thumbnails', () => {
+  test(`only the first ${EAGER_THUMBS} thumbnails on each page load right away; every later one waits until scrolled near`, async ({ page }) => {
+    for (const { path } of pages) {
+      await page.goto(path);
+      const loading = await page.locator('.grid img').evaluateAll((imgs) => imgs.map((i) => i.getAttribute('loading')));
+      expect(loading, path).toEqual(loading.map((_, i) => (i < EAGER_THUMBS ? null : 'lazy')));
+    }
+  });
+
+  test('on Fast 4G, every thumbnail on the first screen of the biggest year shows within 2 seconds', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'only Chromium can slow its own network');
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Network.enable');
+    // Chrome's "Fast 4G" setting, as Chrome DevTools and Puppeteer define it.
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 60 * 2.75,
+      downloadThroughput: ((9 * 1000 * 1000) / 8) * 0.9,
+      uploadThroughput: ((1.5 * 1000 * 1000) / 8) * 0.9,
+    });
+    await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+    await page.goto(`/${biggest}/`, { waitUntil: 'domcontentloaded' });
+    // Milliseconds from the start of the page's request until the last thumbnail on the first screen has loaded.
+    const done = await page.evaluate(async () => {
+      const onScreen = [...document.querySelectorAll('.grid img')].filter((i) => i.getBoundingClientRect().top < window.innerHeight);
+      const times = await Promise.all(
+        onScreen.map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete && img.naturalWidth > 0) resolve(performance.getEntriesByName(img.src)[0]?.responseEnd ?? performance.now());
+              else img.addEventListener('load', () => resolve(performance.now()), { once: true });
+            }),
+        ),
+      );
+      return Math.max(...times);
+    });
+    expect(done).toBeLessThan(2000);
+  });
+
   test('thumbnails on the screen load right away; ones well below the screen wait until scrolled near', async ({ page }) => {
-    await page.goto(`/${years.reduce((a, b) => (byYear.get(b).length > byYear.get(a).length ? b : a))}/`, { waitUntil: 'load' });
+    await page.goto(`/${biggest}/`, { waitUntil: 'load' });
     const state = () =>
       page.locator('.grid img').evaluateAll((imgs) => {
         const loaded = new Set(performance.getEntriesByType('resource').map((e) => new URL(e.name).pathname));
