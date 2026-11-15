@@ -255,7 +255,7 @@ describe('writeSite', () => {
     }
   });
 
-  // Until ./import first creates drawings/, the build makes a site with no drawings (#15).
+  // writeSite on its own; the build stops before it with no drawings (#30).
   it('with no drawings, writes only a home page that says so, into a folder that may not exist yet', () => {
     const to = join(tmp('empty'), 'dist');
     writeSite({ list: [], to });

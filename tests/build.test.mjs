@@ -1,7 +1,7 @@
 // Setup proof (#12): the build writes a placeholder page with the PRD's title and line (R1).
 // Drawings in (#13): the build also writes the list of drawings, or stops and names every problem.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -88,7 +88,8 @@ describe('build/build.mjs', () => {
 // It runs a copy of build/ in a folder of its own, so the real drawings/ is never moved.
 describe('build/build.mjs with no drawings/ folder', () => {
   it('stops with a clear message and writes nothing', () => {
-    const copy = mkdtempSync(join(tmpdir(), 'sketch-gallery-no-drawings-'));
+    // The real path, as the build names it: on macOS the temp folder sits behind a link.
+    const copy = realpathSync(mkdtempSync(join(tmpdir(), 'sketch-gallery-no-drawings-')));
     onTestFinished(() => rmSync(copy, { recursive: true, force: true }));
     cpSync(join(root, 'build'), join(copy, 'build'), { recursive: true });
     symlinkSync(join(root, 'node_modules'), join(copy, 'node_modules'), 'dir');
