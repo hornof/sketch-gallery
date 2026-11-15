@@ -6,7 +6,7 @@ Built with the apb process: https://github.com/hornof/apb
 
 ## Using it
 
-You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). From the repo folder:
+You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stryker asks for Node 22.18 or later; on an older 22 it warns but runs. From the repo folder:
 
 - `npm install` installs the tools, once.
 - `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. Open `dist/index.html` in a browser to see the site, and `dist/drawings.json` for the list of drawings.

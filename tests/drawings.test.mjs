@@ -64,7 +64,7 @@ describe('building the test drawings', () => {
     });
   });
 
-  it('has a thumbnail and a full-size file for every drawing in the list, and no other files', () => {
+  it('has a thumbnail and a full-size copy for every drawing in the list, and no other files', () => {
     const listed = list.drawings.flatMap((d) => [d.thumb, d.full]).sort();
     const made = [...filesUnder(join(out, 'thumbs'), '/thumbs/'), ...filesUnder(join(out, 'full'), '/full/')].sort();
     expect(made).toEqual(listed);
@@ -96,7 +96,7 @@ describe('building the test drawings', () => {
     }
   });
 
-  it('keeps the full-size pictures exactly as they were', async () => {
+  it('keeps the pictures in the full-size copies exactly as they were', async () => {
     for (const d of list.drawings) {
       const src = join(fixtures, String(d.year), `${d.date}.jpg`);
       const a = await sharp(src).raw().toBuffer();
