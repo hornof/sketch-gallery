@@ -51,7 +51,7 @@ Web pages Claude makes and hosts on claude.ai. Each is private to its owner unti
 | [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci) (plain page) | Every placeholder drawing by year, newest year first, plus the ones set aside | While the drawings were made; reference |
 | [Placeholder Drawing Trials](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV) (plain page) | Six drawing sources compared, which led to choosing ChatGPT | Done; kept for the record |
 | [Thumbnail Size Check](https://claude.ai/artifact/BTyoAzjMcVd7Sew6XvW298) (plain page) | Three drawings as 600 and 500 pixel thumbnails, side by side; the human chose 500 from it | Done; kept for the record |
-| [Gallery Grid Preview](https://claude.ai/artifact/41sbeWZm5yDSiGRenbXgxB) (plain page) | Screenshots of the year pages with all 161 drawings, for the human's look at PR #27 | Done; kept for the record |
+| [Gallery Grid Preview](https://claude.ai/artifact/41sbeWZm5yDSiGRenbXgxB) (plain page) | Screenshots of the year pages with all 161 drawings, for the human's look at PR #27 | In use for PR #27's review; then kept for the record |
 
 ## On the human's computer
 Folders, and scheduled tasks that run Claude unattended.
