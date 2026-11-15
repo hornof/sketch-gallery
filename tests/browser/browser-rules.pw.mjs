@@ -40,6 +40,24 @@ test('the site itself breaks no rule: every year, every drawing\'s thumbnail, th
   expect(await violations(page)).toEqual([]);
 });
 
+test('the pop-up breaks no rule: open a drawing, step to the next, close', async ({ page }) => {
+  const dates = drawingsByYear().get(years[0]);
+  await page.goto('/', { waitUntil: 'load' });
+  await page.locator(`.grid a[data-date="${dates[0]}"]`).click();
+  await expect(page.locator('.pswp')).toHaveClass(/pswp--open/);
+  // The full-size drawing has loaded in the pop-up.
+  const loaded = (date) =>
+    page.locator(`.pswp img.pswp__img[src="/full/${years[0]}/${date}.jpg"]`).evaluateAll((imgs) => imgs.some((i) => i.complete && i.naturalWidth > 0));
+  await expect.poll(() => loaded(dates[0])).toBe(true);
+  if (dates.length > 2) {
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => loaded(dates[2])).toBe(true); // the pop-up loads the one after next, ready
+  }
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.pswp')).toHaveCount(0);
+  expect(await violations(page)).toEqual([]);
+});
+
 test('code from the site runs; code written into the page or from another site does not', async ({ page }) => {
   await page.route(`${SITE}/probe.js`, (r) => r.fulfill({ contentType: 'text/javascript', body: 'window.ran = (window.ran || []).concat("site")' }));
   await page.route('https://elsewhere.example/probe.js', (r) => r.fulfill({ contentType: 'text/javascript', body: 'window.ran = (window.ran || []).concat("elsewhere")' }));
