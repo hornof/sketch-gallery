@@ -95,6 +95,22 @@ describe('renderPage', () => {
     );
   });
 
+  it('R3 (links, for drawings): each drawing\'s tile is where its link, /YYYY/#YYYY-MM-DD, points, and no two drawings in a year share a link', () => {
+    fc.assert(
+      fc.property(listArb, (list) => {
+        for (const year of new Set(list.map((d) => d.year))) {
+          const html = renderPage({ year, list });
+          const ids = [...gridOf(html).matchAll(/<a [^>]*\bid="([^"]*)"/g)].map((m) => m[1]);
+          expect(ids).toEqual(tileDates(html));
+          expect(new Set(ids).size).toBe(ids.length);
+          // Every id on the page is a tile's, so a link can't land anywhere else.
+          const all = [...html.replace(/<template[\s\S]*?<\/template>/g, '').matchAll(/\bid="([^"]*)"/g)].map((m) => m[1]);
+          expect(all).toEqual(ids);
+        }
+      }),
+    );
+  });
+
   it('loads the first thumbnails right away and the rest only when scrolled near', () => {
     const check = (list) => {
       for (const year of new Set(list.map((d) => d.year))) {
