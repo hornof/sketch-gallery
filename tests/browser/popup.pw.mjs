@@ -91,14 +91,15 @@ function expectSameRect(actual, expected, label) {
   for (const k of ['x', 'y', 'w', 'h']) expect(Math.abs(actual[k] - expected[k]), `${label}: ${k} of ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`).toBeLessThanOrEqual(2);
 }
 
-// Starts watching the pop-up's animations, from before an action until it has been still
-// for a while: holds them at their first frame (`at: 'start'`) or their last
-// (`at: 'end'`) just long enough to measure the drawing, then lets them run on.
-// Returns a promise of the drawing's place at that moment.
-const holdAnimations = (page, at) =>
-  page.evaluate(
-    ({ at, code }) =>
-      new Promise((resolve, reject) => {
+// Starts watching the pop-up's animations, before an action: as soon as the drawing's
+// zoom starts, holds them at their first frame (`at: 'start'`) or their last (`at: 'end'`)
+// just long enough to measure the drawing, then lets them run on. Resolves once the
+// watch is running in the page, so the action can't come first; gives back a function
+// that waits for the drawing's place at that moment.
+async function holdAnimations(page, at) {
+  await page.evaluate(
+    ({ at, code }) => {
+      window.held = new Promise((resolve) => {
         const t0 = performance.now();
         const step = () => {
           const anims = document.getAnimations().filter((a) => a.effect?.target?.closest?.('.pswp') && !a.effect.target.closest('.pswp__preloader'));
@@ -111,13 +112,21 @@ const holdAnimations = (page, at) =>
             const r = eval(code).getBoundingClientRect();
             for (const a of anims) a.play();
             resolve({ x: r.left, y: r.top, w: r.width, h: r.height });
-          } else if (performance.now() - t0 > 5000) reject(new Error('No animation started'));
-          else requestAnimationFrame(step);
+          } else if (performance.now() - t0 > 10_000) resolve(null);
+          // Checked every few milliseconds, not once a frame, in case a busy browser draws few frames.
+          else setTimeout(step, 4);
         };
-        requestAnimationFrame(step);
-      }),
+        step();
+      });
+    },
     { at, code: shownImage },
   );
+  return async () => {
+    const rect = await page.evaluate(() => window.held);
+    expect(rect, 'the drawing\'s zoom never started').not.toBeNull();
+    return rect;
+  };
+}
 
 // Starts timing each of the pop-up's motions, as the visitor sees them: every frame, for
 // each moving part (the dark background's and the buttons' opacity, the drawing's place
@@ -249,10 +258,10 @@ test.describe('R5 (pop-up)', () => {
     const { date, y } = await scrollToMiddle(page);
     await page.evaluate(() => (window.samePage = true));
     const thumb = await thumbRect(page, date);
-    const start = holdAnimations(page, 'start');
+    const start = await holdAnimations(page, 'start');
     await tileFor(page, date).click();
     // The first frame of the zoom: the drawing exactly where its thumbnail is.
-    expectSameRect(await start, thumb, 'first frame');
+    expectSameRect(await start(), thumb, 'first frame');
     await waitOpen(page);
     // The last: much larger than the thumbnail, centered, and fully on the screen.
     const end = await shownRect(page);
@@ -288,13 +297,13 @@ test.describe('R5 (pop-up)', () => {
     const thumb = await thumbRect(page, date);
     const box = await tileFor(page, date).locator('img').evaluate((i) => i.getBoundingClientRect().height);
     expect(box - thumb.h).toBeGreaterThan(20);
-    const start = holdAnimations(page, 'start');
+    const start = await holdAnimations(page, 'start');
     await tileFor(page, date).click();
-    expectSameRect(await start, thumb, 'first frame');
+    expectSameRect(await start(), thumb, 'first frame');
     await waitOpen(page);
-    const end = holdAnimations(page, 'end');
+    const end = await holdAnimations(page, 'end');
     await page.keyboard.press('Escape');
-    expectSameRect(await end, thumb, 'last frame');
+    expectSameRect(await end(), thumb, 'last frame');
     await waitClosed(page);
   });
 
@@ -309,10 +318,10 @@ test.describe('R5 (pop-up)', () => {
       // Opening adds one step to the browser's history (TDD section 5, Back and Forward).
       expect(await page.evaluate(() => history.length)).toBe(before.length + 1);
       const thumb = await thumbRect(page, date);
-      const end = holdAnimations(page, 'end');
+      const end = await holdAnimations(page, 'end');
       await close(page, browserName);
       // The last frame of the closing zoom: the drawing back where its thumbnail is.
-      expectSameRect(await end, thumb, 'last frame');
+      expectSameRect(await end(), thumb, 'last frame');
       await waitClosed(page);
       expect(page.url()).toBe(before.url);
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(y);
