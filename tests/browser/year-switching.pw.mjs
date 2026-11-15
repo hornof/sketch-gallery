@@ -71,6 +71,22 @@ test.describe('R2 (year menu: clicking a year)', () => {
     expect(other).toEqual([]);
   });
 
+  test('opening a page fetches no thumbnail of another year', async ({ page }) => {
+    for (const path of ['/', ...years.map((y) => `/${y}/`)]) {
+      // A blank page first, so nothing the last page was still loading is counted.
+      await page.goto('about:blank');
+      const fetched = [];
+      const onRequest = (r) => fetched.push(new URL(r.url()).pathname);
+      page.on('request', onRequest);
+      await page.goto(path, { waitUntil: 'load' });
+      page.off('request', onRequest);
+      const own = `/thumbs/${yearAt(path)}/`;
+      expect(fetched.filter((p) => p.startsWith('/thumbs/') && !p.startsWith(own)), path).toEqual([]);
+      // The shown year's own thumbnails do load.
+      expect(fetched.some((p) => p.startsWith(own)), path).toBe(true);
+    }
+  });
+
   test('after a switch, the grid is the same as on that year\'s own page', async ({ page }) => {
     // Each year's grid as its own page has it, read by the same browser.
     const own = new Map();
@@ -94,6 +110,20 @@ test.describe('R2 (year menu: clicking a year)', () => {
     await expectShows(page, `/${newest}/`);
     await page.goBack();
     await expectShows(page, `/${oldest}/`);
+  });
+
+  test('clicking the year already shown, from the bottom of the page, brings the year menu to the top of the screen', async ({ page }) => {
+    await page.goto(`/${biggest}/`);
+    await mark(page);
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const navTop = () => menu(page).evaluate((n) => n.getBoundingClientRect().top);
+    expect(await navTop()).toBeLessThan(0);
+    // With the keyboard, so nothing scrolls before the click.
+    await yearLink(page, biggest).evaluate((a) => a.focus({ preventScroll: true }));
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => Math.abs(await navTop())).toBeLessThanOrEqual(1);
+    await expectShows(page, `/${biggest}/`);
+    expect(await isSamePage(page)).toBe(true);
   });
 
   test('a switch from far down a long year scrolls back to the top of the grid; one from the top doesn\'t move the page', async ({ page }) => {
@@ -192,6 +222,32 @@ test.describe('R3 (links, for years)', () => {
     }
   });
 
+  test('Shift-click and Alt-click on each year are left to the browser: Shift opens a new window, and this page is unchanged', async ({ page, context, browserName }) => {
+    await page.goto('/');
+    await mark(page);
+    // Records, after the page's code has seen each click, whether it took the click over.
+    // An Alt-click's own default (a download, in some browsers) is then stopped.
+    await page.evaluate(() => {
+      window.takenOver = [];
+      addEventListener('click', (e) => {
+        window.takenOver.push(e.defaultPrevented);
+        if (e.altKey) e.preventDefault();
+      });
+    });
+    for (const year of years) {
+      const opened = context.waitForEvent('page');
+      await yearLink(page, year).click({ modifiers: ['Shift'] });
+      const win = await opened;
+      await win.waitForLoadState();
+      await expectShows(win, `/${year}/`);
+      await win.close();
+      await yearLink(page, year).click({ modifiers: ['Alt'] });
+      await expectShows(page, '/');
+    }
+    expect(await page.evaluate(() => window.takenOver)).toEqual(years.flatMap(() => [false, false]));
+    expect(await isSamePage(page)).toBe(true);
+  });
+
   test('the address after each switch, pasted into a new tab, opens that year', async ({ page, browser }) => {
     await page.goto('/');
     for (const year of [...years.slice(1), newest]) {
@@ -226,7 +282,10 @@ test.describe('R3 (links, for years)', () => {
     expect(await isSamePage(page)).toBe(true);
   });
 
-  test('random clicks, Backs and Forwards: the page always shows what the history model says', async ({ page }) => {
+  test('random clicks, Backs and Forwards: the page always shows what the history model says', async ({ page }, testInfo) => {
+    // Many runs in one browser and width, rather than a few in each, to reach unusual orders.
+    test.skip(testInfo.project.name !== 'chromium-1440', 'Runs in Chromium at 1440 px only');
+    test.setTimeout(240_000);
     const step = fc.oneof(
       fc.constantFrom(...years).map((year) => ({ kind: 'click', year })),
       fc.constant({ kind: 'back' }),
@@ -259,7 +318,7 @@ test.describe('R3 (links, for years)', () => {
         }
         expect(await isSamePage(page)).toBe(true);
       }),
-      { numRuns: 4 },
+      { numRuns: 25 },
     );
   });
 
@@ -268,6 +327,9 @@ test.describe('R3 (links, for years)', () => {
       await page.goto(`/${year}/`);
       await expectShows(page, `/${newest}/`);
     }
+    // A #date part is dropped too, since that date can't be in the year shown (expectShows checks there's none).
+    await page.goto(`/${emptyYears[0]}/#${emptyYears[0]}-10-01`);
+    await expectShows(page, `/${newest}/`);
     // The address was replaced, not added: Back from the next year returns to the newest, not to the empty year.
     await page.goto(`/${emptyYears[0]}/`);
     await yearLink(page, oldest).click();
@@ -277,11 +339,58 @@ test.describe('R3 (links, for years)', () => {
   });
 });
 
+test.describe('Back from another page, and reload', () => {
+  // Where the page is scrolled, and a drawing fully on the screen there.
+  const place = (page) =>
+    page.evaluate(() => {
+      const a = [...document.querySelectorAll('.grid a')].find((t) => {
+        const r = t.getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= window.innerHeight;
+      });
+      return { y: window.scrollY, href: a.getAttribute('href') };
+    });
+  const scrollDown = (page) => page.evaluate(() => window.scrollTo(0, Math.round((document.documentElement.scrollHeight - window.innerHeight) * 0.6)));
+
+  // Scrolls down the year shown, opens a drawing (today its full-size file), presses Back.
+  async function openDrawingAndBack(page, path) {
+    await scrollDown(page);
+    const before = await place(page);
+    expect(before.y).toBeGreaterThan(0);
+    await page.locator(`.grid a[href="${before.href}"]`).click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe(before.href);
+    await page.goBack();
+    await expectShows(page, path);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before.y);
+  }
+
+  test('scroll down, open a drawing, press Back: the same place in the grid', async ({ page }) => {
+    await page.goto(`/${biggest}/`);
+    await openDrawingAndBack(page, `/${biggest}/`);
+  });
+
+  test('after switching years: scroll down, open a drawing, press Back: the same year, at the same place', async ({ page }) => {
+    await page.goto(`/${years.find((y) => y !== biggest)}/`);
+    await yearLink(page, biggest).click();
+    await expectShows(page, `/${biggest}/`);
+    await openDrawingAndBack(page, `/${biggest}/`);
+  });
+
+  test('a reload stays at the same place in the grid', async ({ page }) => {
+    await page.goto(`/${biggest}/`);
+    await scrollDown(page);
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y).toBeGreaterThan(0);
+    await page.reload();
+    await expectShows(page, `/${biggest}/`);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(y);
+  });
+});
+
 test.describe('With JavaScript off', () => {
-  test('each year link loads that year\'s own page, Back returns, and only the shown year\'s drawings appear', async ({ browser }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false });
-    const page = await context.newPage();
-    await page.goto('http://localhost:4173/');
+  test.use({ javaScriptEnabled: false });
+
+  test('each year link loads that year\'s own page, Back returns, and only the shown year\'s drawings appear', async ({ page }) => {
+    await page.goto('/');
     await expectShows(page, '/');
     for (const year of years.slice(1)) {
       await yearLink(page, year).click();
@@ -290,6 +399,5 @@ test.describe('With JavaScript off', () => {
     }
     await page.goBack();
     await expectShows(page, `/${years.at(-2)}/`);
-    await context.close();
   });
 });

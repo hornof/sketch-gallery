@@ -153,7 +153,10 @@ describe('renderPage', () => {
           expect(held.map((t) => t.year)).toEqual(years.filter((y) => y !== year));
           for (const t of held) {
             const own = renderPage({ year: t.year, list });
-            expect(t.tiles).toBe(gridOf(own));
+            // A held tile has no address a browser would fetch (Firefox fetches <img src>
+            // inside a <template>): its thumbnail is in data-src until the year is picked.
+            expect(t.tiles).not.toMatch(/\ssrc=/);
+            expect(t.tiles.replaceAll('<img data-src="', '<img src="')).toBe(gridOf(own));
             expect(t.count).toBe(countOf(own));
           }
         }
