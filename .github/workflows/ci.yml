@@ -22,3 +22,38 @@ jobs:
         run: npm test
       - name: Test the map script
         run: python3 scripts/test_map_artifact.py
+
+  browsers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Install Chromium, Firefox and WebKit
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Build
+        run: npm run build
+      - name: Test in the browsers
+        run: npm run test:browser
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Lighthouse (mobile score at least 90)
+        run: npm run lighthouse
+      - name: Lighthouse scores
+        if: always()
+        run: node scripts/lighthouse-scores.mjs

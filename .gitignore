@@ -4,3 +4,6 @@ node_modules/
 dist/
 .stryker-tmp/
 reports/
+test-results/
+playwright-report/
+.lighthouseci/
