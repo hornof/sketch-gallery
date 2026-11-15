@@ -4,6 +4,7 @@
 import { copyFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { THUMB_LONG_SIDE } from './drawings.mjs';
 
 export const TITLE = 'Sketch Gallery';
@@ -13,6 +14,12 @@ export const DESCRIPTION = 'This gallery displays drawings made over several yea
 // them (TDD section 5). Four fill a phone's first screen; on wider screens the
 // browser loads any others on the screen at once anyway.
 export const EAGER_THUMBS = 4;
+
+// The page code: switching years in place (#17). A file on the site rather than code
+// written into the page, so the browser rules of issue 9 can allow only the site's own
+// files. Every page works without it.
+const SCRIPT = '/site.js';
+const scriptSource = join(dirname(fileURLToPath(import.meta.url)), 'site.js');
 
 // The fonts, stored on the site itself (TDD section 3): the Latin letters of each,
 // one file covering every weight.
@@ -72,15 +79,33 @@ function tile(d, i) {
   return `<li><a href="${d.full}" data-date="${d.date}" data-width="${d.width}" data-height="${d.height}"><img src="${d.thumb}" alt="${d.caption}" width="${w}" height="${h}" decoding="async"${loading}></a><p class="label" aria-hidden="true">${d.label}</p></li>`;
 }
 
+const tilesOf = (year, list) => list.filter((d) => d.year === year).map(tile).join('\n');
+
+function countOf(year, list) {
+  if (year === undefined) return 'No drawings yet.';
+  const n = list.filter((d) => d.year === year).length;
+  return `${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}`;
+}
+
+// Every other year's tiles and count, ready for build/site.js to swap into the grid when
+// the visitor picks that year (#17). A <template> isn't shown. Its thumbnails' addresses
+// are in data-src, not src, because Firefox fetches an <img src> even inside a
+// <template>; build/site.js turns them back into src when the year is first picked.
+// With JavaScript off, nothing uses them.
+const heldYears = (year, list) =>
+  yearsOf(list)
+    .filter((y) => y !== year)
+    .map((y) => `<template data-year="${y}" data-count="${countOf(y, list)}">\n${tilesOf(y, list).replaceAll('<img src="', '<img data-src="')}\n</template>`)
+    .join('\n');
+
 // The page for one year. `list` is every drawing (from drawings.json), in date order.
 // `home` is true for the home page, whose browser tab is titled just "Sketch Gallery";
 // a year page's tab names its year, like "2025 · Sketch Gallery".
 export function renderPage({ year, list, home = false }) {
-  const mine = list.filter((d) => d.year === year);
-  const n = mine.length;
   const menu = yearsOf(list)
     .map((y) => `<li><a href="/${y}/"${y === year ? ' aria-current="page"' : ''}>${y}</a></li>`)
     .join('');
+  const held = heldYears(year, list);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -90,6 +115,7 @@ export function renderPage({ year, list, home = false }) {
 <title>${home ? TITLE : `${year} · ${TITLE}`}</title>
 <meta name="description" content="${DESCRIPTION}">
 ${FONTS.map((f) => `<link rel="preload" href="${fontUrl(f)}" as="font" type="font/woff2" crossorigin>`).join('\n')}
+<script src="${SCRIPT}" defer></script>
 <style>
 ${CSS}</style>
 </head>
@@ -101,18 +127,18 @@ ${CSS}</style>
 </header>
 <nav aria-label="Years"><ul>${menu}</ul></nav>
 <main>
-<h2 class="count">${year === undefined ? 'No drawings yet.' : `${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}`}</h2>
+<h2 class="count" aria-live="polite">${countOf(year, list)}</h2>
 <ul class="grid">
-${mine.map(tile).join('\n')}
+${tilesOf(year, list)}
 </ul>
-</main>
+${held ? `${held}\n` : ''}</main>
 </div>
 </body>
 </html>
 `;
 }
 
-// Writes /index.html (the newest year), /YYYY/index.html for every year, and the fonts.
+// Writes /index.html (the newest year), /YYYY/index.html for every year, /site.js and the fonts.
 // With no drawings (before ./import first creates drawings/), only a home page that says so.
 export function writeSite({ list, to }) {
   const years = yearsOf(list);
@@ -126,6 +152,7 @@ export function writeSite({ list, to }) {
     writeFileSync(join(to, String(year), 'index.html'), renderPage({ year, list }));
   }
   writeFileSync(join(to, 'index.html'), renderPage({ year: years[0], list, home: true }));
+  copyFileSync(scriptSource, join(to, SCRIPT));
   mkdirSync(join(to, 'fonts'), { recursive: true });
   for (const f of FONTS) {
     const dir = dirname(require.resolve(`${f.pkg}/package.json`));
