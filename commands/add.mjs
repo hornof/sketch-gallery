@@ -108,8 +108,12 @@ export async function add(args, { repo, print, ask, cwd = process.cwd() }) {
   const name = basename(source);
   const meta = await readJpeg(source);
   const thumb = meta && (await makeThumbnail(readFileSync(source)).catch(() => null));
-  if (!thumb) return fail(`${name} isn't really a JPEG`);
-  if (!thumb.data) return fail(`${name} is too detailed for a thumbnail of at most 60 KB, so the site would stop building with it`);
+  if (!thumb) {
+    return fail(`${name} isn't really a JPEG. Save it as a JPEG and try again (on a Mac: open it in Preview, then File > Export, Format: JPEG).`);
+  }
+  if (!thumb.data) {
+    return fail(`${name} is too detailed for a thumbnail of at most 60 KB, so the site would stop building with it. This needs a change to how the site makes thumbnails, not to the file: open an issue with the file attached.`);
+  }
 
   const { date, year } = chosen;
   const to = `drawings/${year}/${date}.jpg`;

@@ -26,15 +26,33 @@ export function getReady(repo) {
     const files = changed.out.split('\n').map((line) => line.slice(3));
     return `The drawings folder has changes that aren't on GitHub yet: ${files.join(', ')}. Send them with git, or remove them, then try again.`;
   }
-  const pull = git(repo, 'pull', '-q', '--ff-only', 'origin', 'main');
-  if (!pull.ok) {
-    return `Couldn't get the latest version from GitHub. Check the internet connection and try again. (git says: ${pull.err})`;
+  const fetch = git(repo, 'fetch', '-q', 'origin', 'main');
+  if (!fetch.ok) {
+    return `Couldn't get the latest version from GitHub. Check the internet connection and try again. (git says: ${fetch.err})`;
   }
+  // Checked before taking GitHub's version, so commits made only on this laptop get
+  // this message, not git's refusal to fast-forward.
   const ahead = Number(git(repo, 'rev-list', '--count', 'origin/main..HEAD').out);
   if (ahead > 0) {
     return `main has ${plural(ahead, 'commit')} that ${ahead === 1 ? 'isn\'t' : 'aren\'t'} on GitHub yet. Send ${ahead === 1 ? 'it' : 'them'} with git push, or remove ${ahead === 1 ? 'it' : 'them'}, then try again.`;
   }
+  const merge = git(repo, 'merge', '-q', '--ff-only', 'origin/main');
+  if (!merge.ok) {
+    const files = blockingFiles(merge.err);
+    if (files.length > 0) {
+      const list = files.length === 1 ? files[0] : `${files.slice(0, -1).join(', ')} and ${files.at(-1)}`;
+      return `${list} ${files.length === 1 ? 'has' : 'have'} changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.`;
+    }
+    return `Couldn't bring this copy of the repo up to date with GitHub. (git says: ${merge.err})`;
+  }
   return null;
+}
+
+// The files git names when the laptop's own changes stop it taking GitHub's
+// version: each is on its own line, starting with a tab, after "would be overwritten".
+function blockingFiles(said) {
+  if (!said.includes('would be overwritten')) return [];
+  return said.split('\n').filter((line) => line.startsWith('\t')).map((line) => line.trim()).sort();
 }
 
 // Copies each file into the repo, commits only those files and pushes to GitHub.
@@ -80,9 +98,10 @@ export function sendToGitHub(repo, files, message) {
   if (!push.ok) {
     undo();
     const moved = /fetch first|non-fast-forward/.test(push.err);
-    const hint = moved
-      ? 'Someone changed GitHub in the meantime. Try ./add again.'
-      : 'Check the internet connection, then try ./add again.';
+    const login = /Authentication failed|could not read Username|Permission to .* denied|\b403\b/.test(push.err);
+    let hint = 'Check the internet connection, then try ./add again.';
+    if (moved) hint = 'Someone changed GitHub in the meantime. Try ./add again.';
+    else if (login) hint = 'GitHub didn\'t accept this laptop\'s login. Sign in with gh auth login and try again.';
     return `Couldn't send it to GitHub. ${hint} (git says: ${push.err})`;
   }
   return null;

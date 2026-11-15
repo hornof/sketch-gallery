@@ -398,6 +398,16 @@ describe('problems: says what is wrong and changes nothing', () => {
     expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my own edit\n');
   });
 
+  it('git can\'t take GitHub\'s version for another reason: says what git said, not the internet', async () => {
+    const sb = sandbox();
+    sb.pushFromElsewhere('notes.txt', 'theirs\n');
+    // Another git command is running in this copy of the repo, as far as git can tell.
+    writeFileSync(join(sb.laptop, '.git', 'index.lock'), '');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Couldn\'t bring this copy of the repo up to date with GitHub. (git says: ');
+    expect(r.out).toContain('index.lock');
+    expect(r.out).not.toContain('internet');
+  });
+
   it('two such files, one of them new on both sides', async () => {
     const sb = sandbox();
     sb.pushFromElsewhere('README.md', 'theirs\n');

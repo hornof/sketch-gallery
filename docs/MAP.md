@@ -4,7 +4,7 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** Build. Next: [#14](https://github.com/hornof/sketch-gallery/issues/14) (`./add`) and [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid)
+**Now:** Build. Next: [#15](https://github.com/hornof/sketch-gallery/issues/15) (`./import`) and [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid)
 
 ```mermaid
 flowchart LR
