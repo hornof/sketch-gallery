@@ -10,7 +10,7 @@ import { keepOnlyOrientation } from './jpeg.mjs';
 // R10 (fast): every thumbnail at most 60 KB. Counted as 60,000 bytes, the stricter reading.
 export const MAX_THUMB_BYTES = 60_000;
 // Thumbnails are at most this many pixels on their long side, before the quality is lowered.
-export const THUMB_LONG_SIDE = 600;
+export const THUMB_LONG_SIDE = 500;
 // WebP quality steps, best first. The first one under the size limit is used.
 export const THUMB_QUALITIES = [80, 70, 60, 50, 40];
 
@@ -108,11 +108,14 @@ export async function buildDrawings({ from, to, maxThumbBytes = MAX_THUMB_BYTES 
 
   const thumbs = [];
   for (const d of drawings) {
-    const thumb = await makeThumbnail(readFileSync(d.path), { maxBytes: maxThumbBytes });
-    if (!thumb.data) {
+    // A file can pass readJpeg and still be damaged inside its picture data; only decoding it finds that.
+    const thumb = await makeThumbnail(readFileSync(d.path), { maxBytes: maxThumbBytes }).catch(() => null);
+    if (!thumb) {
+      problems.push(`${d.year}/${d.date}.jpg: isn't really a JPEG`);
+    } else if (!thumb.data) {
       problems.push(`${d.year}/${d.date}.jpg: its thumbnail is still ${kb(thumb.bytes)} at the lowest quality; the limit is ${kb(maxThumbBytes)}`);
     }
-    thumbs.push(thumb.data);
+    thumbs.push(thumb?.data);
   }
   if (problems.length) throw new BuildStopped(problems);
 
