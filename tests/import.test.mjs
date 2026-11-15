@@ -114,7 +114,7 @@ describe('importing folders', () => {
     expect(r.code).toBe(0);
     expect(r.out).toContain('Importing 2 drawings in one commit:\n- 2025: adding 2 drawings, a new year (now 2 drawings)');
     expect(r.questions).toEqual(['Go ahead? (y/n) ']);
-    expect(r.out).toContain(`Imported 2 drawings. Live in about 2 minutes at:\n${SITE}/2025/`);
+    expect(r.out).toContain(`Sending them to GitHub...\nImported 2 drawings. Live in about 2 minutes at:\n${SITE}/2025/`);
     expect(sb.remoteFiles()).toEqual({
       ...before,
       'drawings/2025/2025-10-07.jpg': blobId(JPEG_A),
@@ -186,7 +186,7 @@ describe('importing folders', () => {
   });
 
   it('answering anything but yes changes nothing', async () => {
-    for (const answer of ['n', '', 'no', 'maybe']) {
+    for (const answer of ['n', '', 'no', 'maybe', 'yesterday', 'yep']) {
       const sb = sandbox();
       const before = snapshot(sb);
       const r = await run(sb, [sb.sourceFolder('2025', { '2025-10-07.jpg': JPEG_A })], { answer });
@@ -317,12 +317,19 @@ describe('problems: lists every one and changes nothing', () => {
   it('names each folder and file the way it was typed, read from the folder ./import is run in', async () => {
     const sb = sandbox();
     const folder = sb.sourceFolder('2025', { '2025-10-07.jpg': JPEG_A, 'IMG_1234.jpg': JPEG_A });
-    const typed = `${basename(dirname(folder))}/2025/`;
+    const typed = `${basename(dirname(folder))}/2025//`;
     const r = await refused(sb, [typed, 'nowhere/2024'], { cwd: sb.root });
     expect(problemLines(r.out)).toEqual([
       `- ${basename(dirname(folder))}/2025/IMG_1234.jpg: "IMG_1234.jpg" isn't named like 2025-10-07.jpg (year-month-day.jpg)`,
       '- nowhere/2024: can\'t find this folder',
     ]);
+  });
+
+  it('a folder name that only contains a year is not a year folder', async () => {
+    const sb = sandbox();
+    const folders = ['12025', '20251', 'drawings 2025'].map((name) => sb.sourceFolder(name, { '2025-10-07.jpg': JPEG_A }));
+    const r = await refused(sb, folders);
+    expect(problemLines(r.out)).toEqual(folders.map((f) => `- ${f}: isn't a year folder. Give the year folders inside it, or name it after its year, like 2025.`));
   });
 
   it('the same year given twice', async () => {
