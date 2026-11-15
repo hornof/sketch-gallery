@@ -47,7 +47,7 @@ GitHub runs the build, the site's tests, the map script's tests, the browser tes
 | .nvmrc | The Node version (22), for the laptop and the automatic tests | Claude |
 | build/build.mjs | Builds the site into `dist/` (not stored in the repo) | Claude |
 | build/pages.mjs | Writes the home page and one page per year, and puts the page code, the pop-up (PhotoSwipe, in `/popup/`) and the fonts on the site | Claude |
-| build/site.js | The page code, served as `/site.js`: the year menu changes the grid without loading a new page, and Back and Forward move between years; a click on a drawing opens it in the pop-up, and Back closes it. Every page works without it | Claude |
+| build/site.js | The page code, served as `/site.js`: the year menu changes the grid without loading a new page, and Back and Forward move between years; a click on a drawing opens it in the pop-up, and Back closes it; in the pop-up, arrows, keys and swipes slide to the next drawing, and the address is the drawing's link, like `/2025/#2025-10-07`. Every page works without it | Claude |
 | build/drawings.mjs | Reads the drawings folder, checks the file rules, makes the thumbnails, the full-size copies and the list of drawings | Claude |
 | build/dates.mjs | Turns a file name like `2025-10-07.jpg` into a date and back, and writes labels like "October 7" | Claude |
 | build/jpeg.mjs | Removes hidden notes, like the place a photo was taken, from the full-size copies, keeping only which way is up | Claude |
