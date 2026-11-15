@@ -4,7 +4,7 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** Build. Next: [#13](https://github.com/hornof/sketch-gallery/issues/13) (drawings in, site data out)
+**Now:** Build. Next: [#14](https://github.com/hornof/sketch-gallery/issues/14) (`./add`) and [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid)
 
 ```mermaid
 flowchart LR
@@ -34,8 +34,10 @@ flowchart LR
 | [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests | Every PR, every push to main |
-| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`. For now it writes a placeholder page. | Every build |
+| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`. The page is still a placeholder. | Every build |
 | [tests/](../tests/) | The site's automatic tests, run by `npm test` | Every PR, every push to main |
+| [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The build uses them until `drawings/` exists. | Every PR, until the real drawings are loaded |
+| [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name and drawing code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
 ## Claude artifacts
@@ -47,6 +49,7 @@ Web pages Claude makes and hosts on claude.ai. Each is private to its owner unti
 | [Sketch Gallery mockups](https://claude.ai/artifact/BP1P6kU4J1Sg5cFvTqto7o) (Design) | Clickable designs of the main screens | PRD review (done) |
 | [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci) (plain page) | Every placeholder drawing by year, newest year first, plus the ones set aside | While the drawings were made; reference |
 | [Placeholder Drawing Trials](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV) (plain page) | Six drawing sources compared, which led to choosing ChatGPT | Done; kept for the record |
+| [Thumbnail Size Check](https://claude.ai/artifact/BTyoAzjMcVd7Sew6XvW298) (plain page) | Three drawings as 600 and 500 pixel thumbnails, side by side; the human chose 500 from it | Done; kept for the record |
 
 ## On the human's computer
 Folders, and scheduled tasks that run Claude unattended.
