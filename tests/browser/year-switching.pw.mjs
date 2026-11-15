@@ -3,7 +3,7 @@
 // What each year shows comes from the drawings folder (source.mjs). What Back and
 // Forward should show comes from a small model of the browser's history kept in this
 // file, not from the site's code.
-import { expect, test } from '@playwright/test';
+import { chromium, expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import fc from 'fast-check';
 import { drawingsByYear, monthDay } from './source.mjs';
@@ -372,6 +372,53 @@ test.describe('Back from another page, and reload', () => {
     await yearLink(page, biggest).click();
     await expectShows(page, `/${biggest}/`);
     await openDrawingAndBack(page, `/${biggest}/`);
+  });
+
+  test('with the browser\'s memory of recent pages on: a page kept there and shown again on Back still lands at the top of the grid on Forward to a year', async ({ baseURL }, testInfo) => {
+    // Playwright starts its browsers with that memory (the back/forward cache) off. Chromium
+    // can be started with it on; Firefox and WebKit can't. Requests must not be routed
+    // (page.route), since that turns it off again.
+    test.skip(testInfo.project.name !== 'chromium-1440', 'Runs in Chromium at 1440 px only');
+    const browser = await chromium.launch({ channel: 'chromium', ignoreDefaultArgs: ['--disable-back-forward-cache'], timeout: 30_000 });
+    try {
+      const page = await browser.newPage({ baseURL, viewport: { width: 1440, height: 900 } });
+      page.on('pageerror', (e) => errors.push(e.message));
+      // Records whether each page shown came from that memory.
+      await page.addInitScript(() => addEventListener('pageshow', (e) => (window.fromMemory = e.persisted)));
+      const start = years.find((y) => y !== biggest);
+      await page.goto(`/${start}/`);
+      await yearLink(page, biggest).click();
+      await expectShows(page, `/${biggest}/`);
+      await page.evaluate(() => window.scrollTo(0, 1000));
+      expect(await page.evaluate(() => window.scrollY)).toBe(1000);
+      await mark(page);
+
+      // Another page: a drawing, today its full-size file.
+      const href = await page.evaluate(() => {
+        const a = [...document.querySelectorAll('.grid a')].find((t) => t.getBoundingClientRect().top >= 0);
+        return a.getAttribute('href');
+      });
+      await page.locator(`.grid a[href="${href}"]`).click();
+      await expect.poll(() => new URL(page.url()).pathname).toBe(href);
+
+      // Back: the same page, kept in memory, at the same place. A page shown again from
+      // memory fires no 'load', so each step waits only until the address has changed.
+      await page.goBack({ waitUntil: 'commit' });
+      await expectShows(page, `/${biggest}/`);
+      expect(await page.evaluate(() => window.fromMemory), 'The page wasn\'t kept in the browser\'s memory of recent pages, so this test proves nothing').toBe(true);
+      expect(await isSamePage(page), 'The page was loaded afresh, not kept in memory').toBe(true);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(1000);
+
+      // Back to the first year, then Forward to the picked one: the year menu at the top of the screen.
+      await page.goBack({ waitUntil: 'commit' });
+      await expectShows(page, `/${start}/`);
+      await page.goForward({ waitUntil: 'commit' });
+      await expectShows(page, `/${biggest}/`);
+      await expect.poll(() => menu(page).evaluate((n) => Math.abs(n.getBoundingClientRect().top))).toBeLessThanOrEqual(1);
+      expect(await isSamePage(page)).toBe(true);
+    } finally {
+      await browser.close();
+    }
   });
 
   test('a reload stays at the same place in the grid', async ({ page }) => {
