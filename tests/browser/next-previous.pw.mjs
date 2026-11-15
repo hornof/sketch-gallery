@@ -170,8 +170,11 @@ test.describe('R6 (next and previous)', () => {
     });
     expect(c.x).toBeLessThan(width / 4);
     expect(c.y).toBeLessThan(60);
+    // Where the caption's words are, not its box, which may be as wide as the screen.
     const cap = await caption(page).evaluate((el) => {
-      const r = el.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const r = range.getBoundingClientRect();
       return { top: r.top, bottom: r.bottom, mid: r.left + r.width / 2, color: getComputedStyle(el).color };
     });
     const img = await page.evaluate(() => {
