@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+// ./import: adds one or more year folders to the gallery (#15). `./import --help` says how.
+// The code is in commands/import.mjs.
+import('./commands/import.mjs')
+  .then((command) => command.main(process.argv.slice(2)))
+  .then((code) => {
+    process.exitCode = code;
+  });

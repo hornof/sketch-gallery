@@ -12,7 +12,8 @@
     "test": "vitest run",
     "fixtures": "node tests/fixtures/make-fixtures.mjs",
     "mutation": "stryker run",
-    "try-add": "node tests/try-add.mjs"
+    "try-add": "node tests/try-add.mjs",
+    "try-import": "node tests/try-import.mjs"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^10.1.1",

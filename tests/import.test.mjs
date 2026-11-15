@@ -3,7 +3,7 @@
 // bare repo standing in for GitHub. Nothing here touches the real repo.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fc from 'fast-check';
 import sharp from 'sharp';
@@ -22,11 +22,12 @@ function sandbox(files) {
 }
 
 // Runs importFolders() in a sandbox, collecting what it prints and every question it asks.
-async function run(sb, args, { answer = 'y', onAsk } = {}) {
+async function run(sb, args, { answer = 'y', onAsk, cwd } = {}) {
   const printed = [];
   const questions = [];
   const code = await importFolders(args, {
     repo: sb.laptop,
+    cwd,
     print: (line) => printed.push(line),
     ask: async (q) => {
       questions.push(q);
@@ -256,9 +257,9 @@ describe('a date that already has a drawing', () => {
 });
 
 describe('problems: lists every one and changes nothing', () => {
-  async function refused(sb, args) {
+  async function refused(sb, args, options) {
     const before = snapshot(sb);
-    const r = await run(sb, args);
+    const r = await run(sb, args, options);
     expect(r.code).toBe(1);
     expect(r.questions).toEqual([]);
     expect(r.out).toContain('Nothing changed.');
@@ -274,7 +275,7 @@ describe('problems: lists every one and changes nothing', () => {
     const good = sb.sourceFolder('2024', { '2024-02-29.jpg': JPEG_C });
     const bad = sb.sourceFolder('2025', { '2025-10-07.jpg': JPEG_A, 'IMG_1234.jpg': JPEG_A });
     const r = await refused(sb, [good, bad]);
-    expect(r.out.split('\n')[0]).toBe('Found 1 problem. Fix it and try again:');
+    expect(r.out.split('\n').slice(0, 2)).toEqual(['Checking every drawing...', 'Found 1 problem. Fix it and try again:']);
     expect(problemLines(r.out)).toEqual([
       `- ${join(bad, 'IMG_1234.jpg')}: "IMG_1234.jpg" isn't named like 2025-10-07.jpg (year-month-day.jpg)`,
     ]);
@@ -298,7 +299,7 @@ describe('problems: lists every one and changes nothing', () => {
     const notYear = sb.sourceFolder('placeholders', { '2021-01-01.jpg': JPEG_A });
     const file = sb.sourceFile('2020', 'a file');
     const r = await refused(sb, [y2025, empty, missing, notYear, file]);
-    expect(r.out.split('\n')[0]).toBe('Found 10 problems. Fix them and try again:');
+    expect(r.out.split('\n').slice(0, 2)).toEqual(['Checking every drawing...', 'Found 10 problems. Fix them and try again:']);
     expect(problemLines(r.out)).toEqual([
       `- ${join(y2025, '2024-12-31.jpg')}: dated 2024 but in the 2025 folder`,
       `- ${join(y2025, '2025-02-30.jpg')}: "2025-02-30.jpg": 2025-02-30 isn't a real date`,
@@ -310,6 +311,17 @@ describe('problems: lists every one and changes nothing', () => {
       `- ${missing}: can't find this folder`,
       `- ${notYear}: isn't a year folder. Give the year folders inside it, or name it after its year, like 2025.`,
       `- ${file}: is a file, not a year folder`,
+    ]);
+  });
+
+  it('names each folder and file the way it was typed, read from the folder ./import is run in', async () => {
+    const sb = sandbox();
+    const folder = sb.sourceFolder('2025', { '2025-10-07.jpg': JPEG_A, 'IMG_1234.jpg': JPEG_A });
+    const typed = `${basename(dirname(folder))}/2025/`;
+    const r = await refused(sb, [typed, 'nowhere/2024'], { cwd: sb.root });
+    expect(problemLines(r.out)).toEqual([
+      `- ${basename(dirname(folder))}/2025/IMG_1234.jpg: "IMG_1234.jpg" isn't named like 2025-10-07.jpg (year-month-day.jpg)`,
+      '- nowhere/2024: can\'t find this folder',
     ]);
   });
 
