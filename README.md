@@ -17,7 +17,7 @@ You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stry
   - `./add --help` lists these.
 - `npm run try-add` tries `./add` safely: it runs the real `./add` code on a throwaway copy of the repo in a temporary folder, with a stand-in for GitHub there too. `npm run try-add -- --date 2026-11-03` tries a date that already has a drawing; add `--replace` to replace it.
 - `npm test` runs the site's tests.
-- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name, drawing and `./add` code and checks that a test catches each one. It takes several minutes.
+- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name, drawing and `./add` code and checks that a test catches each one. It takes about 10 minutes.
 - `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.
 
