@@ -1,18 +1,25 @@
 // Year pages (#16): the build turns the list of drawings into one page per year
 // plus a home page showing the newest year. These tests read the HTML the build
 // writes; the browser tests in tests/browser/ check how it looks and behaves.
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { buildDrawings } from '../build/drawings.mjs';
 import { EAGER_THUMBS, renderPage, writeSite } from '../build/pages.mjs';
 import { caption, label } from '../build/dates.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixtures = join(root, 'tests', 'fixtures', 'drawings');
+
+// A temporary folder, removed when the test that made it ends.
+function tmp(name) {
+  const dir = mkdtempSync(join(tmpdir(), `sketch-gallery-${name}-`));
+  onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
 
 // A list of drawings like the one in drawings.json, from a set of dates.
 function listFrom(dates) {
@@ -138,7 +145,7 @@ describe('renderPage', () => {
 
 describe('writeSite', () => {
   it('writes one page per year, and a home page that shows the newest year', async () => {
-    const to = mkdtempSync(join(tmpdir(), 'sketch-gallery-site-'));
+    const to = tmp('site');
     const list = await buildDrawings({ from: fixtures, to });
     writeSite({ list, to });
     const years = [...new Set(list.map((d) => d.year))].sort((a, b) => b - a);
@@ -149,7 +156,7 @@ describe('writeSite', () => {
   });
 
   it('a year removed since the last build leaves no page behind; thumbnails, full-size copies and fonts stay', () => {
-    const to = mkdtempSync(join(tmpdir(), 'sketch-gallery-site-'));
+    const to = tmp('site');
     for (const dir of ['thumbs/2024', 'full/2024', 'fonts']) {
       mkdirSync(join(to, dir), { recursive: true });
       writeFileSync(join(to, dir, 'keep'), '');
@@ -165,7 +172,7 @@ describe('writeSite', () => {
   });
 
   it('puts the fonts on the site itself, and every font the page asks for is there', async () => {
-    const to = mkdtempSync(join(tmpdir(), 'sketch-gallery-site-'));
+    const to = tmp('site');
     const list = await buildDrawings({ from: fixtures, to });
     writeSite({ list, to });
     const html = readFileSync(join(to, 'index.html'), 'utf8');
@@ -176,14 +183,14 @@ describe('writeSite', () => {
   });
 
   it('R12 (add one drawing): a new year appears in every page\'s menu', async () => {
-    const from = mkdtempSync(join(tmpdir(), 'sketch-gallery-new-year-'));
+    const from = tmp('new-year');
     for (const year of readdirSync(fixtures)) {
       mkdirSync(join(from, year));
       for (const f of readdirSync(join(fixtures, year))) copyFileSync(join(fixtures, year, f), join(from, year, f));
     }
     mkdirSync(join(from, '2030'));
     copyFileSync(join(fixtures, '2025', '2025-10-07.jpg'), join(from, '2030', '2030-01-15.jpg'));
-    const to = mkdtempSync(join(tmpdir(), 'sketch-gallery-site-'));
+    const to = tmp('site');
     const list = await buildDrawings({ from, to });
     writeSite({ list, to });
     const home = readFileSync(join(to, 'index.html'), 'utf8');
@@ -193,5 +200,27 @@ describe('writeSite', () => {
     for (const year of readdirSync(fixtures)) {
       expect(menuYears(readFileSync(join(to, year, 'index.html'), 'utf8'))).toContain(2030);
     }
+  });
+
+  // Until ./import first creates drawings/, the build makes a site with no drawings (#15).
+  it('with no drawings, writes only a home page that says so, into a folder that may not exist yet', () => {
+    const to = join(tmp('empty'), 'dist');
+    writeSite({ list: [], to });
+    const home = readFileSync(join(to, 'index.html'), 'utf8');
+    expect(home).toContain('<title>Sketch Gallery</title>');
+    expect(home).toContain('<h1>Sketch Gallery</h1>');
+    expect(home).toContain('No drawings yet.');
+    expect(home).not.toContain('undefined');
+    expect(menuYears(home)).toEqual([]);
+    expect(tileDates(home)).toEqual([]);
+    expect(readdirSync(to).filter((n) => /^\d{4}$/.test(n))).toEqual([]);
+  });
+
+  it('a page never says "undefined", whatever the list', () => {
+    fc.assert(
+      fc.property(listArb, (list) => {
+        for (const year of new Set(list.map((d) => d.year))) expect(renderPage({ year, list })).not.toContain('undefined');
+      }),
+    );
   });
 });
