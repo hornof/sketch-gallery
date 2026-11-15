@@ -30,7 +30,7 @@ const fontFaces = FONTS.map(
 // Always light: no dark-mode rules, and color-scheme tells the browser not to darken
 // anything itself (PRD section 6).
 const CSS = `${fontFaces}
-:root{color-scheme:light;--page:#faf9f6;--ink:#1b1a18;--text:#3d3b37;--muted:#5c5952;--rule:#dcd8cf;--tile:#fff;--tile-edge:#e2ded6;--ring:#1b1a18}
+:root{color-scheme:light;--page:#faf9f6;--ink:#1b1a18;--text:#3d3b37;--muted:#5c5952;--rule:#dcd8cf;--divider:#a8a398;--tile:#fff;--tile-edge:#e2ded6;--ring:#1b1a18}
 *{box-sizing:border-box}
 html{background:var(--page)}
 body{margin:0;background:var(--page);color:var(--text);font:400 1rem/1.5 Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
@@ -40,17 +40,18 @@ h1{margin:0;font:700 clamp(2rem,1.5rem + 2vw,2.75rem)/1.1 "Space Grotesk",system
 nav{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
 nav ul{display:flex;flex-wrap:wrap;margin:0;padding:0;list-style:none}
 nav li{display:flex;align-items:center}
-nav li+li::before{content:"";width:1px;height:20px;background:#a8a398}
+nav li+li::before{content:"";width:1px;height:20px;background:var(--divider)}
 nav a{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:52px;padding:0 clamp(6px,1.4vw,14px);color:var(--text);font-size:clamp(1rem,0.9rem + 0.4vw,1.125rem);text-decoration:none;font-variant-numeric:tabular-nums}
 nav a:hover{color:var(--ink)}
 nav a[aria-current="page"]{color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:9px}
+@media (max-width:559px){nav li{flex:1 1 auto}nav a{flex:1;padding:0 2px;font-size:min(1.0625rem,4.6vw)}}
 .count{margin:24px 0 16px;font-size:0.9375rem;font-weight:400;color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px;margin:0;padding:0;list-style:none}
 @media (min-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (min-width:720px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 16px}}
 @media (min-width:960px){.grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media (min-width:1200px){.grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:24px 18px}}
-.grid a{display:block;aspect-ratio:6/7;background:var(--tile);border:1px solid var(--tile-edge);color:var(--ink)}
+.grid a{display:block;aspect-ratio:6/7;padding:8px;background:var(--tile);border:1px solid var(--tile-edge);color:var(--ink)}
 .grid img{display:block;width:100%;height:100%;object-fit:contain}
 .label{margin:6px 0 0;font-size:0.875rem;color:var(--muted)}
 a:focus{outline:none}
@@ -72,7 +73,9 @@ function tile(d, i) {
 }
 
 // The page for one year. `list` is every drawing (from drawings.json), in date order.
-export function renderPage({ year, list }) {
+// `home` is true for the home page, whose browser tab is titled just "Sketch Gallery";
+// a year page's tab names its year, like "2025 · Sketch Gallery".
+export function renderPage({ year, list, home = false }) {
   const mine = list.filter((d) => d.year === year);
   const n = mine.length;
   const menu = yearsOf(list)
@@ -84,7 +87,7 @@ export function renderPage({ year, list }) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>${TITLE}</title>
+<title>${home ? TITLE : `${year} · ${TITLE}`}</title>
 <meta name="description" content="${DESCRIPTION}">
 ${FONTS.map((f) => `<link rel="preload" href="${fontUrl(f)}" as="font" type="font/woff2" crossorigin>`).join('\n')}
 <style>
@@ -120,7 +123,7 @@ export function writeSite({ list, to }) {
     mkdirSync(join(to, String(year)), { recursive: true });
     writeFileSync(join(to, String(year), 'index.html'), renderPage({ year, list }));
   }
-  writeFileSync(join(to, 'index.html'), renderPage({ year: years[0], list }));
+  writeFileSync(join(to, 'index.html'), renderPage({ year: years[0], list, home: true }));
   mkdirSync(join(to, 'fonts'), { recursive: true });
   for (const f of FONTS) {
     const dir = dirname(require.resolve(`${f.pkg}/package.json`));

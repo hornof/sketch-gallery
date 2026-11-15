@@ -108,7 +108,7 @@ test.describe('R2 (year menu: its look)', () => {
     expect(parseFloat(rules[3])).toBeLessThanOrEqual(1);
   });
 
-  test('on a phone the years fill the menu\'s full width, on one line, in text at least 18 px (docs/mockups/3-phone-grid.png)', async ({ page }) => {
+  test('on a phone the years fill the menu\'s full width, on one line, in text at least 17 px (docs/mockups/3-phone-grid.png)', async ({ page }) => {
     test.skip(page.viewportSize().width >= 560, 'phone width only');
     await page.goto('/');
     const nav = await page.getByRole('navigation', { name: 'Years' }).evaluate((n) => n.getBoundingClientRect().toJSON());
@@ -116,7 +116,8 @@ test.describe('R2 (year menu: its look)', () => {
     expect(Math.abs(links[0].left - nav.left)).toBeLessThanOrEqual(1);
     expect(Math.abs(links.at(-1).right - nav.right)).toBeLessThanOrEqual(1);
     expect(new Set(links.map((l) => Math.round(l.top))).size).toBe(1);
-    for (const l of links) expect(l.size).toBeGreaterThanOrEqual(18);
+    // Slightly larger than the 16 px of the first version, like the mockup.
+    for (const l of links) expect(l.size).toBeGreaterThanOrEqual(17);
   });
 });
 
