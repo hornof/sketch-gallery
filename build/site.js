@@ -97,12 +97,13 @@
 
   // Where the page lands. Each step in the browser's history has its own setting: 'auto',
   // the browser puts the visitor back where they were, or 'manual', this code decides.
-  // On a page load (a reload, or Back from another page) the browser's way is kept. On
-  // Back and Forward between the years this code added, both steps are 'manual', so the
-  // switch lands at the top of the grid. A step added here starts as a copy of the one
-  // before, so the click sets 'manual' before adding it. Leaving the page sets 'auto'
-  // again; coming back to it from the browser's memory of recent pages ('persisted')
-  // sets 'manual' once more.
+  // On a page load (a reload, or Back from another page) the browser's way is kept. A
+  // step added here starts as a copy of the one before, so the click sets 'manual' before
+  // adding it, and Back and Forward between the years this code added land at the top of
+  // the grid. Leaving the page sets 'auto' again; coming back to it from the browser's
+  // memory of recent pages ('persisted') sets 'manual' once more. When the browser
+  // instead loads the page afresh on Back, that year's step keeps 'auto', the browser's
+  // way, so Forward to it later can return to the old place rather than the top of the grid.
   addEventListener('pagehide', () => {
     history.scrollRestoration = 'auto';
   });
