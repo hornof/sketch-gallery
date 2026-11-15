@@ -11,3 +11,4 @@ One line per iteration: date · what changed · tests (pass/fail count). Append-
 - 2026-11-14 · #13 thumbnails 500 pixels on the long side; a thumbnail that fails to decode is listed as "isn't really a JPEG" · site tests 57/57 pass; build on the 161 placeholder drawings passes, biggest thumbnail 59,164 bytes
 - 2026-11-14 · #13 docs: MAP "Now" line names #14 and #16, "full-size copies" in MAP and two test titles, Thumbnail Size Check artifact row; README notes Stryker wants Node 22.18+ · site tests 57/57 pass
 - 2026-11-14 · #13 npm audit fix changed nothing (typed-rest-client 2.3.1 pins qs 6.15.1), so package.json overrides qs to ^6.16.1; npm audit: 3 moderate left, all minimatch inside Stryker; --omit=dev 0 · site tests 57/57 pass
+- 2026-11-14 · #13 Stryker after the review fixes: 95.3% (dates.mjs 100%, drawings.mjs 96.35%, jpeg.mjs 91.72%), 18 not caught; the new one, .catch returning undefined instead of null, changes nothing · site tests 57/57 pass
