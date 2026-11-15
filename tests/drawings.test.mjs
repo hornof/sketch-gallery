@@ -342,3 +342,30 @@ describe('the list and the files always match', () => {
     expect(readFileSync(join(from, '2025/2025-01-01.jpg')).equals(jpeg)).toBe(true);
   });
 });
+
+describe('a drawings folder that does not exist (#15)', () => {
+  it('stops the build', async () => {
+    const from = join(tmp('none'), 'drawings');
+    const to = join(tmp('out'), 'dist');
+    const err = await buildDrawings({ from, to }).catch((e) => e);
+    expect(err).toBeInstanceOf(BuildStopped);
+    expect(err.problems).toEqual([`the drawings folder ${from} doesn't exist`]);
+    expect(existsSync(to)).toBe(false);
+  });
+
+  it('with allowMissing, writes an empty list and clears out an earlier build\'s files', async () => {
+    const to = tmp('out');
+    await buildDrawings({ from: makeFolder({ '2025/2025-01-01.jpg': 'jpeg' }), to });
+    const list = await buildDrawings({ from: join(tmp('none'), 'drawings'), to, allowMissing: true });
+    expect(list).toEqual([]);
+    expect(JSON.parse(readFileSync(join(to, 'drawings.json'), 'utf8'))).toEqual({ drawings: [] });
+    expect(filesUnder(to)).toEqual(['drawings.json']);
+  });
+
+  it('allowMissing changes nothing when the folder exists', async () => {
+    const from = makeFolder({ '2025/2025-01-01.jpg': 'jpeg', '2025/photo.jpg': 'jpeg' });
+    const err = await buildDrawings({ from, to: tmp('out'), allowMissing: true }).catch((e) => e);
+    expect(err).toBeInstanceOf(BuildStopped);
+    expect(err.problems).toEqual(['2025/photo.jpg: "photo.jpg" isn\'t named like 2025-10-07.jpg (year-month-day.jpg)']);
+  });
+});

@@ -1,7 +1,7 @@
-// A throwaway copy of the setup ./add works in, all inside a temporary folder (#14):
+// A throwaway copy of the setup ./add and ./import work in, all inside a temporary folder (#14, #15):
 //   github.git  a bare repo standing in for GitHub, so nothing is ever sent to the real one
 //   laptop/     a clone of it, standing in for the owner's copy of the repo
-// Tests and `npm run try-add` use it. Nothing here touches the real repo.
+// Tests, `npm run try-add` and `npm run try-import` use it. Nothing here touches the real repo.
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -87,6 +87,17 @@ export function makeSandbox(files = {}) {
       const path = join(dir, name);
       writeFileSync(path, data);
       return path;
+    },
+    // A folder outside the repo, for ./import to add. files: { '2025-10-07.jpg': <Buffer>, 'sub': null }
+    // (null makes a folder inside it). Returns the folder's path, which ends in `name`.
+    sourceFolder(name, files = {}) {
+      const dir = join(mkdtempSync(join(root, 'from-')), name);
+      mkdirSync(dir, { recursive: true });
+      for (const [rel, data] of Object.entries(files)) {
+        if (data === null) mkdirSync(join(dir, rel), { recursive: true });
+        else writeFileSync(join(dir, rel), data);
+      }
+      return dir;
     },
   };
 }
