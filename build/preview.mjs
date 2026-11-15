@@ -12,8 +12,8 @@ export const SITE = JSON.parse(readFileSync(join(root, 'site.json'), 'utf8'));
 
 // 1200 × 630 is the size Facebook, Slack, iMessage and the others all show well.
 export const PREVIEW = { path: '/preview.jpg', width: 1200, height: 630 };
-// The page color (build/pages.mjs), around the drawing.
-const BACKGROUND = '#faf9f6';
+// White around the drawing, the same as its paper, so the paper's edge doesn't show.
+const BACKGROUND = '#ffffff';
 
 // The drawing site.json names, or the newest one, with a warning, if it isn't in the list.
 export function pickPreview(list, date = SITE.preview) {
@@ -48,7 +48,7 @@ export function previewTags({ path, drawing, site = SITE }) {
 }
 
 // Writes /preview.jpg into `to`: the whole drawing, upright, as tall as fits, centered on
-// the page color. Reads the full-size copy the build already wrote there.
+// white. Reads the full-size copy the build already wrote there.
 export async function writePreview({ drawing, to }) {
   await sharp(join(to, drawing.full))
     .autoOrient()
