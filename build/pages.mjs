@@ -43,7 +43,8 @@ const POPUP_CSS = `
 .pswp__caption{position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;justify-content:center;padding:0 16px;font:400 1rem/1.5 Inter,system-ui,sans-serif;color:#fff;text-align:center}
 .pswp--ui-visible .pswp__caption{pointer-events:none}
 @media (min-width:560px){.pswp__caption{height:64px;font-size:1.0625rem}}
-.pswp__button--arrow{width:56px;height:56px;margin-top:-28px;border-radius:50%;background:rgba(38,38,38,.9);border:1px solid rgba(255,255,255,.3)}
+.pswp__button--arrow{width:56px;height:56px;margin-top:-28px;border-radius:50%}
+.pswp__button--arrow,.pswp__button--arrow:hover,.pswp__button--arrow:active,.pswp__button--arrow:focus{background:rgba(38,38,38,.9);border:1px solid rgba(255,255,255,.3)}
 .pswp--touch .pswp__button--arrow{visibility:visible}
 .pswp__button--arrow--prev{left:8px}
 .pswp__button--arrow--next{right:8px}
