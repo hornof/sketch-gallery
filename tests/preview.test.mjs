@@ -196,6 +196,8 @@ describe('browser rules (_headers)', () => {
     expect(headersFor(text, '/')).toEqual({ A: '1' });
     expect(headersFor(text, '/2025/')).toEqual({ A: '1', B: '2' });
     expect(headersFor(text, '/2026/')).toEqual({ A: '1' });
+    expect(headersFor(text, '/old/2025/')).toEqual({ A: '1' });
+    expect(headersFor(text, '/2025/x')).toEqual({ A: '1' });
     expect(headersFor(text, '/full/2025/x.jpg')).toEqual({ A: '1', C: '3' });
   });
 });
