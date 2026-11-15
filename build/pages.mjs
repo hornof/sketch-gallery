@@ -1,7 +1,7 @@
 // Year pages and grid (#16). Turns the list of drawings into one page per year,
 // /YYYY/index.html, and a home page, /index.html, that shows the newest year.
 // The look follows the PRD's section 6 and the mockups in docs/mockups/.
-import { copyFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +22,23 @@ export const EAGER_THUMBS = 4;
 // files. Every page works without it.
 const SCRIPT = '/site.js';
 const scriptSource = join(dirname(fileURLToPath(import.meta.url)), 'site.js');
+
+// The pop-up (#18): PhotoSwipe (TDD section 3), stored on the site itself in /popup/.
+// build/site.js fetches its code and look only when a drawing is first opened, so a page
+// costs nothing more to open. popup.css is PhotoSwipe's own look followed by these rules,
+// which come later and so win: a near-black background (PRD section 6), and a light
+// ring on the button the keyboard has reached, which shows on that background. PhotoSwipe
+// spins its loading indicator all the time, hidden until a drawing is slow to load; here
+// it spins only while shown, and not at all when the device asks for less motion.
+const POPUP = '/popup';
+const POPUP_CSS = `
+/* The site's own rules for the pop-up (build/pages.mjs) */
+.pswp{--pswp-bg:#151515;--pswp-placeholder-bg:#fff}
+.pswp__button:focus-visible{outline:3px solid #fff;outline-offset:-4px}
+.pswp__preloader .pswp__icn{animation:none}
+.pswp__preloader--active .pswp__icn{animation:pswp-clockwise 600ms linear infinite}
+@media (prefers-reduced-motion:reduce){.pswp__preloader--active .pswp__icn{animation:none}}
+`;
 
 // The fonts, stored on the site itself (TDD section 3): the Latin letters of each,
 // one file covering every weight.
@@ -141,7 +158,7 @@ ${held ? `${held}\n` : ''}</main>
 `;
 }
 
-// Writes /index.html (the newest year), /YYYY/index.html for every year, /site.js and the fonts.
+// Writes /index.html (the newest year), /YYYY/index.html for every year, /site.js, the pop-up's files in /popup/ and the fonts.
 // Given no drawings, only a home page that says so. The build never gets here with none, since it stops first (#30).
 export function writeSite({ list, to }) {
   const years = yearsOf(list);
@@ -156,6 +173,11 @@ export function writeSite({ list, to }) {
   }
   writeFileSync(join(to, 'index.html'), renderPage({ year: years[0], list, home: true }));
   copyFileSync(scriptSource, join(to, SCRIPT));
+  // PhotoSwipe's folder of published files (its package names only some of them).
+  const photoswipe = dirname(require.resolve('photoswipe/photoswipe.css'));
+  mkdirSync(join(to, POPUP), { recursive: true });
+  copyFileSync(join(photoswipe, 'photoswipe.esm.min.js'), join(to, POPUP, 'photoswipe.esm.min.js'));
+  writeFileSync(join(to, POPUP, 'popup.css'), readFileSync(join(photoswipe, 'photoswipe.css'), 'utf8') + POPUP_CSS);
   mkdirSync(join(to, 'fonts'), { recursive: true });
   for (const f of FONTS) {
     const dir = dirname(require.resolve(`${f.pkg}/package.json`));

@@ -235,6 +235,28 @@ describe('writeSite', () => {
     expect(readFileSync(join(to, 'site.js'), 'utf8')).toBe(readFileSync(join(root, 'build', 'site.js'), 'utf8'));
   });
 
+  // The pop-up (#18): PhotoSwipe's code and look, on the site itself, fetched only when a drawing is first opened.
+  it('puts the pop-up on the site: PhotoSwipe\'s code as published, and its look followed by the site\'s own pop-up rules', () => {
+    const to = tmp('site');
+    writeSite({ list: listFrom(['2024-10-01', '2025-10-01']), to });
+    const pkg = join(root, 'node_modules', 'photoswipe', 'dist');
+    expect(readFileSync(join(to, 'popup', 'photoswipe.esm.min.js'), 'utf8')).toBe(readFileSync(join(pkg, 'photoswipe.esm.min.js'), 'utf8'));
+    const css = readFileSync(join(to, 'popup', 'popup.css'), 'utf8');
+    const theirs = readFileSync(join(pkg, 'photoswipe.css'), 'utf8');
+    expect(css.startsWith(theirs)).toBe(true);
+    expect(css.length).toBeGreaterThan(theirs.length);
+    // The page itself names neither: build/site.js fetches them when a drawing is first opened.
+    const html = readFileSync(join(to, '2025', 'index.html'), 'utf8');
+    expect(html).not.toContain('/popup/');
+  });
+
+  it('PhotoSwipe is pinned to one exact version', () => {
+    const { dependencies } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    expect(dependencies.photoswipe).toMatch(/^\d+\.\d+\.\d+$/);
+    const installed = JSON.parse(readFileSync(join(root, 'node_modules', 'photoswipe', 'package.json'), 'utf8'));
+    expect(installed.version).toBe(dependencies.photoswipe);
+  });
+
   it('R12 (add one drawing): a new year appears in every page\'s menu', async () => {
     const from = tmp('new-year');
     for (const year of readdirSync(fixtures)) {
