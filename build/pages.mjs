@@ -139,7 +139,7 @@ ${held ? `${held}\n` : ''}</main>
 }
 
 // Writes /index.html (the newest year), /YYYY/index.html for every year, /site.js and the fonts.
-// With no drawings (before ./import first creates drawings/), only a home page that says so.
+// Given no drawings, only a home page that says so. The build never gets here with none, since it stops first (#30).
 export function writeSite({ list, to }) {
   const years = yearsOf(list);
   mkdirSync(to, { recursive: true });

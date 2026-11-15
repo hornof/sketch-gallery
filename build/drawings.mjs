@@ -102,10 +102,10 @@ const kb = (bytes) => `${Math.round(bytes / 100) / 10} KB`;
 // Checks the drawings folder `from`, then writes into `to`:
 //   thumbs/YYYY/YYYY-MM-DD.webp, full/YYYY/YYYY-MM-DD.jpg and drawings.json.
 // If any file breaks the rules or any thumbnail can't get small enough, it writes
-// nothing and throws BuildStopped, listing every problem. With allowMissing, a
-// `from` folder that doesn't exist means no drawings rather than a problem.
-export async function buildDrawings({ from, to, maxThumbBytes = MAX_THUMB_BYTES, allowMissing = false }) {
-  const { drawings, problems } = allowMissing && !existsSync(from) ? { drawings: [], problems: [] } : await readDrawings(from);
+// nothing and throws BuildStopped, listing every problem. A `from` folder that
+// doesn't exist is one of those problems.
+export async function buildDrawings({ from, to, maxThumbBytes = MAX_THUMB_BYTES }) {
+  const { drawings, problems } = await readDrawings(from);
 
   const thumbs = [];
   for (const d of drawings) {
