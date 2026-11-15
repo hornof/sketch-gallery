@@ -136,21 +136,21 @@ describe('writePreview', () => {
     expect(statSync(file).size).toBeLessThanOrEqual(300_000);
   });
 
-  it('shows the whole drawing, upright and centered on the page color', async () => {
+  it('shows the whole drawing, upright and centered on white', async () => {
     // A sideways phone photo is in the fixtures; its preview must come out upright too.
     for (const drawing of list) {
       await writePreview({ drawing, to });
       const { width, height } = drawing; // already upright
       const scale = Math.min(1200 / width, 630 / height);
       const w = Math.round(width * scale);
-      // The edges outside the drawing are the page color, #faf9f6; the middle column holds the drawing.
+      // The bands either side of the drawing are white, #ffffff, so the paper's edge doesn't show; the middle column holds the drawing.
       const { data, info } = await sharp(join(to, 'preview.jpg')).raw().toBuffer({ resolveWithObject: true });
       const px = (x, y) => [...data.subarray((y * info.width + x) * info.channels, (y * info.width + x) * info.channels + 3)];
       const margin = Math.floor((1200 - w) / 2);
       if (margin > 40) {
         for (const y of [0, 315, 629]) {
           for (const x of [0, Math.floor(margin / 2), 1199 - Math.floor(margin / 2), 1199]) {
-            px(x, y).forEach((c, i) => expect(Math.abs(c - [0xfa, 0xf9, 0xf6][i]), `${drawing.date} at ${x},${y}`).toBeLessThanOrEqual(4));
+            px(x, y).forEach((c, i) => expect(Math.abs(c - [0xff, 0xff, 0xff][i]), `${drawing.date} at ${x},${y}`).toBeLessThanOrEqual(4));
           }
         }
       }
