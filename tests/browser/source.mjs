@@ -8,7 +8,9 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // The same folder the build reads: drawings/, or the test drawings until it exists.
+// After `npm run build -- --drawings <dir>`, set DRAWINGS=<dir> to test that build.
 export function sourceFolder() {
+  if (process.env.DRAWINGS) return process.env.DRAWINGS;
   const real = join(root, 'drawings');
   return existsSync(real) ? real : join(root, 'tests', 'fixtures', 'drawings');
 }

@@ -15,6 +15,15 @@ const pages = [{ path: '/', year: newest }, ...years.map((year) => ({ path: `/${
 const menuLinks = (page) => page.getByRole('navigation', { name: 'Years' }).getByRole('link');
 const tiles = (page) => page.locator('.grid > li');
 
+// Scrolls down the grid one screen at a time, as a visitor would, so each lazy thumbnail comes near the screen.
+async function scrollThrough(page) {
+  const { total, step } = await page.evaluate(() => ({ total: document.documentElement.scrollHeight, step: window.innerHeight }));
+  for (let y = 0; y <= total; y += step) {
+    await page.evaluate((top) => window.scrollTo(0, top), y);
+    await page.waitForTimeout(100);
+  }
+}
+
 // The date each tile shows, read from its thumbnail's file name.
 async function tileDates(page) {
   const srcs = await tiles(page).locator('img').evaluateAll((imgs) => imgs.map((i) => i.getAttribute('src')));
@@ -149,19 +158,21 @@ test.describe('R10 (fast): loading the thumbnails', () => {
         return imgs.map((img) => ({ top: img.getBoundingClientRect().top, loaded: img.complete && img.naturalWidth > 0, asked: loaded.has(new URL(img.src).pathname) }));
       });
     const height = page.viewportSize().height;
+    // WebKit starts on-screen lazy thumbnails just after the page's load event, so allow
+    // up to 2 seconds, the time R10 (fast) gives for a year to be usable.
+    await expect.poll(async () => (await state()).filter((i) => i.top < height).every((i) => i.loaded), { timeout: 2000 }).toBe(true);
     for (const img of await state()) {
-      if (img.top < height) expect(img.loaded).toBe(true);
-      // Browsers start lazy loads up to a few thousand pixels early; well past that, nothing is fetched yet.
-      if (img.top > height + 4000) expect(img.asked).toBe(false);
+      // Browsers start lazy loads up to 2,500 pixels early; well past that, nothing is fetched yet.
+      if (img.top > height + 3000) expect(img.asked).toBe(false);
     }
-    await page.locator('.grid > li').last().scrollIntoViewIfNeeded();
+    await scrollThrough(page);
     await expect.poll(async () => (await state()).every((i) => i.loaded)).toBe(true);
   });
 
   test('every thumbnail keeps the drawing\'s shape and has its size written in the page', async ({ page }) => {
     for (const { path } of pages) {
       await page.goto(path, { waitUntil: 'load' });
-      await page.locator('.grid > li').last().scrollIntoViewIfNeeded();
+      await scrollThrough(page);
       await expect.poll(() => page.locator('.grid img').evaluateAll((imgs) => imgs.every((i) => i.complete && i.naturalWidth > 0))).toBe(true);
       const shapes = await page.locator('.grid img').evaluateAll((imgs) =>
         imgs.map((i) => ({ written: Number(i.getAttribute('width')) / Number(i.getAttribute('height')), real: i.naturalWidth / i.naturalHeight, fit: getComputedStyle(i).objectFit })),
