@@ -5,7 +5,8 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest';
+import { CHILD_TIMEOUT_MS } from './sandbox.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const page = join(root, 'dist', 'index.html');
@@ -24,7 +25,7 @@ describe('build/build.mjs', () => {
   beforeAll(() => {
     // Start from nothing, so the test proves this build wrote the page.
     rmSync(join(root, 'dist'), { recursive: true, force: true });
-    execFileSync(process.execPath, [join(root, 'build', 'build.mjs'), '--drawings', fixtures], { cwd: root });
+    execFileSync(process.execPath, [join(root, 'build', 'build.mjs'), '--drawings', fixtures], { cwd: root, timeout: CHILD_TIMEOUT_MS });
   });
 
   it('writes dist/index.html', () => {
@@ -62,18 +63,19 @@ describe('build/build.mjs', () => {
 
   it('stops when the folder given with --drawings does not exist', () => {
     const missing = join(tmpdir(), 'sketch-gallery-no-such-folder');
-    const run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs'), '--drawings', missing], { cwd: root, encoding: 'utf8' });
+    const run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs'), '--drawings', missing], { cwd: root, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
     expect(run.status).toBe(1);
     expect(run.stderr).toContain(`the drawings folder ${missing} doesn't exist`);
   });
 
   it('stops with a clear message naming every bad file, and leaves dist/ alone', () => {
     const bad = mkdtempSync(join(tmpdir(), 'sketch-gallery-bad-'));
+    onTestFinished(() => rmSync(bad, { recursive: true, force: true }));
     mkdirSync(join(bad, '2025'));
     mkdirSync(join(bad, '2019'));
     writeFileSync(join(bad, '2025', 'IMG_1234.jpg'), 'not a picture');
     const before = readFileSync(join(root, 'dist', 'drawings.json'));
-    const run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs'), '--drawings', bad], { cwd: root, encoding: 'utf8' });
+    const run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs'), '--drawings', bad], { cwd: root, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
     expect(run.status).toBe(1);
     expect(run.stderr).toContain('The build stopped. Fix these and try again:');
     expect(run.stderr).toContain('2019/: is empty');
@@ -87,7 +89,7 @@ describe('build/build.mjs', () => {
 describe('build/build.mjs with no --drawings', () => {
   let run;
   beforeAll(() => {
-    run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs')], { cwd: root, encoding: 'utf8' });
+    run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs')], { cwd: root, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
   }, 300_000); // all the real drawings, once they're in drawings/
 
   it('builds', () => {

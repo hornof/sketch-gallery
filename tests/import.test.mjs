@@ -9,8 +9,9 @@ import fc from 'fast-check';
 import sharp from 'sharp';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { HELP, describeImport, importFolders } from '../commands/import.mjs';
+import { limits } from '../commands/git.mjs';
 import { readDrawings } from '../build/drawings.mjs';
-import { JPEG_A, JPEG_B, JPEG_C, blobId, git, makeSandbox } from './sandbox.mjs';
+import { CHILD_TIMEOUT_MS, JPEG_A, JPEG_B, JPEG_C, blobId, git, makeSandbox } from './sandbox.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -393,7 +394,7 @@ describe('when the push fails, everything is undone', () => {
       '--replace',
     ]);
     expect(r.code).toBe(1);
-    expect(r.out).toContain('Couldn\'t send it to GitHub. Check the internet connection, then try ./import again.');
+    expect(r.out).toContain('Couldn\'t send to GitHub. Check the internet connection, then try ./import again.');
     expect(r.out).toContain('Nothing changed.');
     expect(r.out).not.toContain('Live in about 2 minutes');
     expect(sb.laptopHead()).toBe(laptopHead);
@@ -403,6 +404,32 @@ describe('when the push fails, everything is undone', () => {
     expect(existsSync(join(sb.laptop, 'drawings', '2025', '2025-12-31.jpg'))).toBe(false);
     expect(readFileSync(join(sb.laptop, 'drawings', '2025', '2025-10-07.jpg'))).toEqual(JPEG_B);
   });
+
+  it('a push that never finishes is stopped, counts as a failed push and is undone', async () => {
+    const sb = sandbox({ 'drawings/2025/2025-10-07.jpg': JPEG_B });
+    const status = sb.laptopStatus();
+    const laptopHead = sb.laptopHead();
+    const remote = sb.remoteFiles();
+    // The stand-in for GitHub takes 5 seconds to answer, then refuses; ./import waits 1.
+    writeFileSync(join(sb.remote, 'hooks', 'pre-receive'), '#!/bin/sh\nsleep 5\nexit 1\n', { mode: 0o755 });
+    const saved = limits.gitMs;
+    limits.gitMs = 1000;
+    let r;
+    try {
+      r = await run(sb, [sb.sourceFolder('2024', { '2024-02-29.jpg': JPEG_C }), sb.sourceFolder('2025', { '2025-12-31.jpg': JPEG_A })]);
+    } finally {
+      limits.gitMs = saved;
+    }
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('Couldn\'t send to GitHub. Check the internet connection, then try ./import again.');
+    expect(r.out).toContain('git push didn\'t finish within 1 second, so it was stopped');
+    expect(r.out).toContain('Nothing changed.');
+    expect(sb.laptopHead()).toBe(laptopHead);
+    expect(sb.laptopStatus()).toBe(status);
+    expect(sb.remoteFiles()).toEqual(remote);
+    expect(existsSync(join(sb.laptop, 'drawings', '2024'))).toBe(false);
+    expect(existsSync(join(sb.laptop, 'drawings', '2025', '2025-12-31.jpg'))).toBe(false);
+  }, 30_000);
 
   it('someone changed GitHub while the question was waiting: try again, and it works', async () => {
     const sb = sandbox();
@@ -421,15 +448,27 @@ describe('when the push fails, everything is undone', () => {
 
 describe('random folders: all of them or none of them', () => {
   // Each file in a random folder is one of these kinds. Only "good" files, and "existing"
-  // ones when --replace is given, are allowed; every other kind is a problem.
+  // ones when --replace is given, are allowed; every other kind is a problem, and so is an
+  // empty folder.
   const kind = fc.constantFrom('good', 'good', 'good', 'badName', 'wrongYear', 'notJpeg', 'existing', 'folder');
+  // The kinds a case that is meant to succeed may use.
+  const allowedKind = (replace) => (replace ? fc.constantFrom('good', 'good', 'existing') : fc.constant('good'));
+
+  // Each case first chooses whether it is meant to succeed, so about half of the cases
+  // check "adds every folder" and half check "adds none of them".
+  const cases = fc.record({
+    years: fc.uniqueArray(fc.integer({ min: 2000, max: 2030 }), { minLength: 1, maxLength: 3 }),
+    succeed: fc.boolean(),
+    replace: fc.boolean(),
+  }).chain(({ years, succeed, replace }) => {
+    const folder = succeed ? fc.array(allowedKind(replace), { minLength: 1, maxLength: 4 }) : fc.array(kind, { maxLength: 4 });
+    return fc.tuple(fc.constant(years), fc.array(folder, { minLength: years.length, maxLength: years.length }), fc.constant(replace), fc.constant(succeed));
+  });
 
   it('adds every folder it is given, or none of them, and names every problem', async () => {
     await fc.assert(fc.asyncProperty(
-      fc.uniqueArray(fc.integer({ min: 2000, max: 2030 }), { minLength: 1, maxLength: 3 }).chain((years) =>
-        fc.tuple(fc.constant(years), fc.array(fc.array(kind, { maxLength: 4 }), { minLength: years.length, maxLength: years.length }), fc.boolean()),
-      ),
-      async ([years, kindsPerYear, replace]) => {
+      cases,
+      async ([years, kindsPerYear, replace, succeed]) => {
         // Already on GitHub: one drawing for each "existing" file, plus one unrelated drawing.
         const seed = { 'drawings/1999/1999-01-01.jpg': JPEG_B };
         const plan = years.map((year, i) => kindsPerYear[i].map((k, j) => {
@@ -460,6 +499,8 @@ describe('random folders: all of them or none of them', () => {
               expectedProblems.push(join(folder, name));
             }
           });
+          // A case meant to succeed has nothing wrong in it.
+          if (succeed) expect(expectedProblems).toEqual([]);
           const before = snapshot(sb);
           const r = await run(sb, [...folders, ...(replace ? ['--replace'] : [])]);
           if (expectedProblems.length > 0) {
@@ -502,7 +543,7 @@ describe('how ./import is run, before it looks at the repo', () => {
   it('no folder, or an unknown option, is refused with how to use it', async () => {
     const none = await runHere([]);
     expect(none.code).toBe(1);
-    expect(none.out).toContain('Which folders? For example: ./import ../drawings/2025');
+    expect(none.out).toContain('Which folders? For example: ./import ../my-drawings/2025');
     expect(none.out).toContain(HELP);
     const unknown = await runHere(['2025', '--force']);
     expect(unknown.code).toBe(1);
@@ -512,12 +553,12 @@ describe('how ./import is run, before it looks at the repo', () => {
 });
 
 describe('the ./import command', () => {
-  const runCli = (...args) => spawnSync(join(repoRoot, 'import'), args, { cwd: repoRoot, encoding: 'utf8', input: '' });
+  const runCli = (...args) => spawnSync(join(repoRoot, 'import'), args, { cwd: repoRoot, encoding: 'utf8', input: '', timeout: CHILD_TIMEOUT_MS });
 
   it('--help says how to use it and changes nothing', () => {
     const r = runCli('--help');
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain('./import ../drawings/2024 ../drawings/2025');
+    expect(r.stdout).toContain('./import ../my-drawings/2024 ../my-drawings/2025');
     expect(r.stdout).toContain('--replace');
     expect(r.stdout).toContain('--yes');
   });
@@ -525,6 +566,6 @@ describe('the ./import command', () => {
   it('with no folder, says how to use it', () => {
     const r = runCli();
     expect(r.status).toBe(1);
-    expect(r.stdout).toContain('Which folders? For example: ./import ../drawings/2025');
+    expect(r.stdout).toContain('Which folders? For example: ./import ../my-drawings/2025');
   });
 });

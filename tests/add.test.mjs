@@ -11,7 +11,7 @@ import { describe, expect, it, onTestFinished } from 'vitest';
 import { HELP, add, chooseDate, describeAdd, drawingLink } from '../commands/add.mjs';
 import { git as gitRun } from '../commands/git.mjs';
 import { readDrawings } from '../build/drawings.mjs';
-import { JPEG_A, JPEG_B, JPEG_C, blobId, git, makeSandbox } from './sandbox.mjs';
+import { CHILD_TIMEOUT_MS, JPEG_A, JPEG_B, JPEG_C, blobId, git, makeSandbox } from './sandbox.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -562,7 +562,7 @@ describe('when the push fails, everything is undone', () => {
     const remote = sb.remoteFiles();
     const r = await run(sb, args, { onAsk });
     expect(r.code).toBe(1);
-    expect(r.out).toContain('Couldn\'t send it to GitHub');
+    expect(r.out).toContain('Couldn\'t send to GitHub');
     expect(r.out).toContain('Nothing changed.');
     expect(r.out).not.toContain('Live in about 2 minutes');
     expect(sb.laptopHead()).toBe(laptopHead);
@@ -574,7 +574,7 @@ describe('when the push fails, everything is undone', () => {
     const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     sb.refusePushes();
     const { r, remote } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
-    expect(r.out).toContain('Couldn\'t send it to GitHub. Check the internet connection, then try ./add again.');
+    expect(r.out).toContain('Couldn\'t send to GitHub. Check the internet connection, then try ./add again.');
     expect(existsSync(join(sb.laptop, 'drawings', '2026', '2026-11-03.jpg'))).toBe(false);
     expect(sb.remoteFiles()).toEqual(remote);
   });
@@ -589,7 +589,7 @@ describe('when the push fails, everything is undone', () => {
     const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     sb.refusePushes(said);
     const { r, remote } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
-    expect(r.out).toContain('Couldn\'t send it to GitHub. GitHub didn\'t accept this laptop\'s login. Sign in with gh auth login and try again.');
+    expect(r.out).toContain('Couldn\'t send to GitHub. GitHub didn\'t accept this laptop\'s login. Sign in with gh auth login and try again.');
     expect(r.out).not.toContain('internet');
     expect(sb.remoteFiles()).toEqual(remote);
   });
@@ -711,7 +711,7 @@ describe('how ./add is run, before it looks at the repo', () => {
 });
 
 describe('the ./add command', () => {
-  const runCli = (...args) => spawnSync(join(repoRoot, 'add'), args, { cwd: repoRoot, encoding: 'utf8', input: '' });
+  const runCli = (...args) => spawnSync(join(repoRoot, 'add'), args, { cwd: repoRoot, encoding: 'utf8', input: '', timeout: CHILD_TIMEOUT_MS });
 
   it('--help says how to use it and changes nothing', () => {
     const r = runCli('--help');

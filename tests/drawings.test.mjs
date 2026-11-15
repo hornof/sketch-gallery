@@ -1,20 +1,30 @@
 // Drawings in, site data out (#13, TDD section 5 and item 2 of section 12).
 // The build reads a drawings folder, enforces the file rules, makes thumbnails
 // and full-size copies, and writes the list of drawings.
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import exifr from 'exifr';
 import fc from 'fast-check';
 import sharp from 'sharp';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BuildStopped, MAX_THUMB_BYTES, THUMB_LONG_SIDE, buildDrawings, makeThumbnail, readDrawings } from '../build/drawings.mjs';
 import { PHONE_PHOTO } from './fixtures/make-fixtures.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, 'fixtures', 'drawings');
-const tmp = (name) => mkdtempSync(join(tmpdir(), `sketch-gallery-${name}-`));
+// A new temporary folder. Every one is removed when this file's tests end, pass or fail;
+// some are made in beforeAll, where a test's own clean-up can't be used.
+const made = [];
+const tmp = (name) => {
+  const dir = mkdtempSync(join(tmpdir(), `sketch-gallery-${name}-`));
+  made.push(dir);
+  return dir;
+};
+afterAll(() => {
+  for (const dir of made) rmSync(dir, { recursive: true, force: true });
+});
 
 // Every file under a folder, as paths relative to it, leaving out hidden files like .DS_Store.
 function filesUnder(dir, prefix = '') {
