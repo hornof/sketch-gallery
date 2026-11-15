@@ -153,8 +153,12 @@
 
   // Where a tile's drawing is on the screen. The thumbnail is fitted inside its box, which
   // can leave white space at its sides, so the zoom starts and ends on the drawing itself.
+  // A tile entirely above or below the screen gives nothing, so the pop-up fades out
+  // instead of zooming the drawing off the screen; the page stays where it was. A tile
+  // partly on the screen keeps the zoom.
   function drawnBounds({ element, width, height }) {
     const r = element.querySelector('img').getBoundingClientRect();
+    if (r.bottom <= 0 || r.top >= innerHeight) return undefined;
     const scale = Math.min(r.width / width, r.height / height);
     return { x: r.left + (r.width - width * scale) / 2, y: r.top + (r.height - height * scale) / 2, w: width * scale };
   }
