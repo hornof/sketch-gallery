@@ -4,7 +4,7 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** Build. Next: [#15](https://github.com/hornof/sketch-gallery/issues/15) (`./import`) and [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid)
+**Now:** Build. [#15](https://github.com/hornof/sketch-gallery/issues/15) (`./import`) is waiting for review; once it's merged, the human loads the real drawings with it. Next: [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid)
 
 ```mermaid
 flowchart LR
@@ -36,10 +36,12 @@ flowchart LR
 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests | Every PR, every push to main |
 | [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`. The page is still a placeholder. | Every build |
 | [add](../add) | The `./add` command: adds one drawing and sends it to GitHub. Its code is in [commands/](../commands/). `./add --help` says how to use it. | Each time the human adds a drawing |
+| [import](../import) | The `./import` command: adds one or more year folders in one commit and sends them to GitHub, all or nothing. Its code is in [commands/](../commands/). `./import --help` says how to use it. | Loading the real drawings once, then any past year |
 | [tests/](../tests/) | The site's automatic tests, run by `npm test` | Every PR, every push to main |
-| [tests/try-add.mjs](../tests/try-add.mjs) | `npm run try-add`: runs `./add` on a throwaway copy of the repo with a stand-in for GitHub, made by `tests/sandbox.mjs`, which the `./add` tests use too | To try `./add` without changing anything |
-| [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The build uses them until `drawings/` exists. | Every PR, until the real drawings are loaded |
-| [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name, drawing and `./add` code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
+| [tests/try-add.mjs](../tests/try-add.mjs) | `npm run try-add`: runs `./add` on a throwaway copy of the repo with a stand-in for GitHub, made by `tests/sandbox.mjs`, which the `./add` and `./import` tests use too | To try `./add` without changing anything |
+| [tests/try-import.mjs](../tests/try-import.mjs) | `npm run try-import`: runs `./import` the same way, on two sample year folders or on folders you name | To try `./import` without changing anything |
+| [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The tests build them with `--drawings tests/fixtures/drawings`. | Every PR |
+| [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name, drawing, `./add` and `./import` code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
 ## Claude artifacts
