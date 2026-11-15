@@ -1,7 +1,7 @@
 // Setup proof (#12): the build writes a placeholder page with the PRD's title and line (R1).
 // Drawings in (#13): the build also writes the list of drawings, or stops and names every problem.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -84,8 +84,23 @@ describe('build/build.mjs', () => {
   });
 });
 
-// With no --drawings, the build reads drawings/ and only drawings/ (#15). Before ./import
-// first creates drawings/, that means a site with no drawings, never the test drawings.
+// With no drawings/ folder, the build stops, so the host keeps the last good site live (#30).
+// It runs a copy of build/ in a folder of its own, so the real drawings/ is never moved.
+describe('build/build.mjs with no drawings/ folder', () => {
+  it('stops with a clear message and writes nothing', () => {
+    const copy = mkdtempSync(join(tmpdir(), 'sketch-gallery-no-drawings-'));
+    onTestFinished(() => rmSync(copy, { recursive: true, force: true }));
+    cpSync(join(root, 'build'), join(copy, 'build'), { recursive: true });
+    symlinkSync(join(root, 'node_modules'), join(copy, 'node_modules'), 'dir');
+    const run = spawnSync(process.execPath, [join(copy, 'build', 'build.mjs')], { cwd: copy, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('The build stopped. Fix these and try again:');
+    expect(run.stderr).toContain(`the drawings folder ${join(copy, 'drawings')} doesn't exist`);
+    expect(existsSync(join(copy, 'dist'))).toBe(false);
+  });
+});
+
+// With no --drawings, the build reads drawings/ and only drawings/ (#15), never the test drawings.
 describe('build/build.mjs with no --drawings', () => {
   let run;
   beforeAll(() => {
