@@ -10,7 +10,7 @@ import { EAGER_THUMBS } from '../../build/pages.mjs';
 const byYear = drawingsByYear();
 const years = [...byYear.keys()].sort((a, b) => b - a);
 const newest = years[0];
-// The year with the most drawings: with the real drawings, a full October of 31.
+// The year with the most drawings: with the drawings in drawings/, a full October of 31.
 const biggest = years.reduce((a, b) => (byYear.get(b).length > byYear.get(a).length ? b : a));
 // Every page: the home page shows the newest year.
 const pages = [{ path: '/', year: newest }, ...years.map((year) => ({ path: `/${year}/`, year }))];

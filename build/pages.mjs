@@ -1,7 +1,7 @@
 // Year pages and grid (#16). Turns the list of drawings into one page per year,
 // /YYYY/index.html, and a home page, /index.html, that shows the newest year.
 // The look follows the PRD's section 6 and the mockups in docs/mockups/.
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { THUMB_LONG_SIDE } from './drawings.mjs';
@@ -118,7 +118,7 @@ export function writeSite({ list, to }) {
   const years = yearsOf(list);
   mkdirSync(to, { recursive: true });
   // Clear out year pages from an earlier build, so a removed year leaves nothing behind.
-  for (const name of existsSync(to) ? readdirSync(to) : []) {
+  for (const name of readdirSync(to)) {
     if (/^\d{4}$/.test(name)) rmSync(join(to, name), { recursive: true, force: true });
   }
   for (const year of years) {

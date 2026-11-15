@@ -1,8 +1,8 @@
 // Makes the test drawings in tests/fixtures/drawings/ (#13).
 // Run it again with `npm run fixtures`; it writes the same files every time.
 //
-// The drawings are simple shapes with their date written on them. They stand in
-// for the real drawings until those are loaded. One of them is made like a photo
+// The drawings are simple shapes with their date written on them. The tests use
+// them instead of the drawings in drawings/. One of them is made like a photo
 // taken sideways on a phone: its pixels are stored on their side, a hidden note
 // (the EXIF orientation tag) says to turn it upright, and it carries the place
 // where it was taken (a GPS location, in both the EXIF and the XMP notes).

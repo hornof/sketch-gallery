@@ -90,7 +90,7 @@ describe('build/build.mjs with no --drawings', () => {
   let run;
   beforeAll(() => {
     run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs')], { cwd: root, encoding: 'utf8', timeout: 300_000 });
-  }, 300_000); // all the real drawings, once they're in drawings/
+  }, 300_000); // every drawing in drawings/
 
   it('builds', () => {
     expect(run.stderr).toBe('');

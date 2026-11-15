@@ -9,7 +9,7 @@ Built with the apb process: https://github.com/hornof/apb
 You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stryker asks for Node 22.18 or later; on an older 22 it warns but runs. From the repo folder:
 
 - `npm install` installs the tools, once.
-- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `./import` first loads the drawings, there is no `drawings/` folder and the site has no drawings. `npm run build -- --drawings tests/fixtures/drawings` builds the test drawings instead. `--drawings <folder>` works with any folder laid out the same way. That folder must hold only year folders: to try the placeholder drawings, copy the six year folders of `../sketch-gallery-placeholders` into an empty folder first. If a file breaks the rules, the build stops and lists every problem.
+- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. With no `drawings/` folder, the site has no drawings and the home page says "No drawings yet." `npm run build -- --drawings tests/fixtures/drawings` builds the test drawings instead. `--drawings <folder>` works with any folder laid out the same way. That folder must hold only year folders. If a file breaks the rules, the build stops and lists every problem.
 - `npm run serve` shows the built site at http://localhost:4173/, the way Cloudflare serves it. `dist/drawings.json` is the list of drawings.
 - `./add 2026-11-03.jpg` adds one drawing and sends it to GitHub; the site shows it about 2 minutes later. Run it on main. It gets the latest version from GitHub first, checks the file, says what it will do and asks for a yes. It changes nothing if anything is wrong, and undoes everything if sending to GitHub fails.
   - `./add photo.jpg --date 2026-11-03` adds a file that isn't named by date, and gives it that name.
@@ -21,7 +21,7 @@ You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stry
   - `--yes` doesn't ask before adding.
   - `./import --help` lists these.
 - `npm run try-add` tries `./add` safely: it runs the real `./add` code on a throwaway copy of the repo in a temporary folder, with a stand-in for GitHub there too. `npm run try-add -- --date 2026-11-03` tries a date that already has a drawing; add `--replace` to replace it.
-- `npm run try-import` tries `./import` the same way, on two sample year folders. `npm run try-import -- --bad` adds two badly named files to them, to see every problem listed and nothing added. `npm run try-import -- <folder> <folder>` imports your own year folders into the throwaway copy, starting, like main today, with no drawings.
+- `npm run try-import` tries `./import` the same way, on two sample year folders. `npm run try-import -- --bad` adds two badly named files to them, to see every problem listed and nothing added. `npm run try-import -- <folder> <folder>` imports your own year folders into the throwaway copy, starting with no drawings.
 - `npm test` runs the site's tests.
 - `npm run test:browser` runs the browser tests on the built site: Chromium, Firefox and WebKit at 375, 768 and 1440 px wide. The first time, `npx playwright install chromium firefox webkit` downloads the browsers. After building with `--drawings <folder>`, run `DRAWINGS=<folder> npm run test:browser` so the tests expect that folder's drawings.
 - `npm run lighthouse` runs Lighthouse, Google's page-speed check, on the built site, as a phone would see it, and fails below 90 for speed or accessibility. `node scripts/lighthouse-scores.mjs` prints the scores. It needs Chrome and Node 22.19 or later. Lighthouse runs through `npx` at a fixed version rather than from package.json, because listing it there adds 13 high-severity warnings to `npm audit`; keep it out of package.json.
@@ -37,7 +37,7 @@ GitHub runs the build, the site's tests, the map script's tests, the browser tes
 |---|---|---|
 | docs/collaborator-guide.md | For an invited collaborator: the steps, in order | collaborator |
 | docs/MAP.md | Every piece of the project and where it lives | anyone |
-| docs/drawings.md | The placeholder drawings: themes by year, samples, how they were made; images in docs/drawings/ | the human |
+| docs/drawings.md | The drawings: themes by year, samples, how they were made; images in docs/drawings/ | the human |
 | docs/research/drawing-sources.md | The six drawing sources compared, and why ChatGPT was chosen; images in docs/research/drawing-sources/ | the human |
 | .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, the site's tests, the map script's tests, the browser tests and Lighthouse | Claude |
 | playwright.config.mjs | Settings for the browser tests: which browsers and widths | Claude |

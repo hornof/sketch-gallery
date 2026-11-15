@@ -1,4 +1,4 @@
-# The placeholder drawings
+# The drawings
 
 Supporting detail for the PRD's Content section. The PRD says *what* the drawings are; this file is the full record.
 
