@@ -32,10 +32,6 @@
   // The browser tab: "Sketch Gallery" on the home page, "2025 · Sketch Gallery" on a year.
   const titleAt = (path) => (path === '/' ? site : `${yearAt(path)} · ${site}`);
 
-  // The page code, not the browser, decides where the page is after Back and Forward,
-  // so a switch always lands at the top of the grid.
-  history.scrollRestoration = 'manual';
-
   // If the visitor is further down than the year menu, brings the menu to the top of
   // the screen, with the start of the grid below it. Never moves the page down.
   function toGridTop() {
@@ -43,11 +39,20 @@
     if (window.scrollY > top) window.scrollTo(0, top);
   }
 
+  // A held year's tiles, ready for the grid. Their thumbnails wait in data-src (see
+  // build/pages.mjs), so the page fetches none of them until the year is picked; here they
+  // become src again, in the same place, so the tiles match the year's own page exactly.
+  function tilesFrom(template) {
+    const t = document.createElement('template');
+    t.innerHTML = template.innerHTML.replaceAll('<img data-src="', '<img src="');
+    return [...document.importNode(t.content, true).childNodes];
+  }
+
   function show(year) {
     if (year === shown) return;
     years.get(shown).tiles = [...grid.childNodes];
     const next = years.get(year);
-    next.tiles ??= [...document.importNode(next.template.content, true).childNodes];
+    next.tiles ??= tilesFrom(next.template);
     grid.replaceChildren(...next.tiles);
     count.textContent = next.count;
     for (const a of links) {
@@ -78,6 +83,7 @@
       return;
     }
     show(year);
+    history.scrollRestoration = 'manual';
     history.pushState(null, '', pathOf(year));
     document.title = titleAt(pathOf(year));
   });
@@ -87,5 +93,20 @@
     if (year === null) return;
     show(year);
     document.title = titleAt(location.pathname);
+  });
+
+  // Where the page lands. Each step in the browser's history has its own setting: 'auto',
+  // the browser puts the visitor back where they were, or 'manual', this code decides.
+  // On a page load (a reload, or Back from another page) the browser's way is kept. On
+  // Back and Forward between the years this code added, both steps are 'manual', so the
+  // switch lands at the top of the grid. A step added here starts as a copy of the one
+  // before, so the click sets 'manual' before adding it. Leaving the page sets 'auto'
+  // again; coming back to it from the browser's memory of recent pages ('persisted')
+  // sets 'manual' once more.
+  addEventListener('pagehide', () => {
+    history.scrollRestoration = 'auto';
+  });
+  addEventListener('pageshow', (e) => {
+    if (e.persisted) history.scrollRestoration = 'manual';
   });
 })();

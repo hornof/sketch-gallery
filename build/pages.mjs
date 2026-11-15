@@ -88,12 +88,14 @@ function countOf(year, list) {
 }
 
 // Every other year's tiles and count, ready for build/site.js to swap into the grid when
-// the visitor picks that year (#17). A <template> isn't shown and loads none of its
-// images, so a page costs no more to open; with JavaScript off, nothing uses them.
+// the visitor picks that year (#17). A <template> isn't shown. Its thumbnails' addresses
+// are in data-src, not src, because Firefox fetches an <img src> even inside a
+// <template>; build/site.js turns them back into src when the year is first picked.
+// With JavaScript off, nothing uses them.
 const heldYears = (year, list) =>
   yearsOf(list)
     .filter((y) => y !== year)
-    .map((y) => `<template data-year="${y}" data-count="${countOf(y, list)}">\n${tilesOf(y, list)}\n</template>`)
+    .map((y) => `<template data-year="${y}" data-count="${countOf(y, list)}">\n${tilesOf(y, list).replaceAll('<img src="', '<img data-src="')}\n</template>`)
     .join('\n');
 
 // The page for one year. `list` is every drawing (from drawings.json), in date order.

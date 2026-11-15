@@ -285,7 +285,6 @@ test.describe('R3 (links, for years)', () => {
   test('random clicks, Backs and Forwards: the page always shows what the history model says', async ({ page }, testInfo) => {
     // Many runs in one browser and width, rather than a few in each, to reach unusual orders.
     test.skip(testInfo.project.name !== 'chromium-1440', 'Runs in Chromium at 1440 px only');
-    test.setTimeout(240_000);
     const step = fc.oneof(
       fc.constantFrom(...years).map((year) => ({ kind: 'click', year })),
       fc.constant({ kind: 'back' }),
@@ -380,6 +379,9 @@ test.describe('Back from another page, and reload', () => {
     await scrollDown(page);
     const y = await page.evaluate(() => window.scrollY);
     expect(y).toBeGreaterThan(0);
+    // WebKit notes where the page is a moment after a scroll, not at once; a reload straight
+    // after a scroll loses the place there even with JavaScript off.
+    await page.waitForTimeout(500);
     await page.reload();
     await expectShows(page, `/${biggest}/`);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(y);
