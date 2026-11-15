@@ -457,17 +457,20 @@ describe('problems: says what is wrong and changes nothing', () => {
 
   // A laptop commit and GitHub changed the same lines: the pull stops partway, and
   // ./add must say how to go back, not give advice git refuses.
-  it('a pull that stopped partway: says to go back with git rebase --abort, and going back works', async () => {
-    const sb = sandbox();
+  // git keeps a stopped rebase's state in one of two folders, depending on its rebase.backend setting.
+  it.each(['merge', 'apply'])('a pull that stopped partway (rebase.backend %s): says to go back with git rebase --abort, and going back works', async (backend) => {
+    const sb = sandbox({ 'notes.txt': 'start\n' });
     sb.pushFromElsewhere('README.md', 'theirs\n');
     writeFileSync(join(sb.laptop, 'README.md'), 'mine\n');
     git(sb.laptop, 'commit', '-q', '-am', 'Mine');
     const mine = sb.laptopHead();
+    git(sb.laptop, 'config', 'rebase.backend', backend);
+    // An unsaved edit to a file git tracks, which --autostash sets aside.
     writeFileSync(join(sb.laptop, 'notes.txt'), 'unsaved\n');
     await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'git pull --rebase --autostash');
     const pull = gitRun(sb.laptop, 'pull', '-q', '--rebase', '--autostash');
     expect(pull.ok).toBe(false);
-    expect(pull.err + pull.out).toContain('CONFLICT');
+    expect(pull.err + pull.out).toContain('git rebase --abort');
     const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], STOPPED_PARTWAY);
     expect(r.out.split('\n')[0]).toBe(STOPPED_PARTWAY);
     expect(r.out).not.toContain('git switch main');

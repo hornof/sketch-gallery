@@ -3,7 +3,7 @@
 // GitHub login.
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 export function git(repo, ...args) {
   const r = spawnSync('git', args, { cwd: repo, encoding: 'utf8' });
@@ -19,6 +19,11 @@ export function getReady(repo) {
   const branch = git(repo, 'branch', '--show-current');
   if (!branch.ok) return `${repo} isn't a copy of the repo (git says: ${branch.err})`;
   if (branch.out !== 'main') {
+    // A rebase that stopped on a conflict leaves the repo on no branch, and git
+    // refuses to switch until it is finished or abandoned.
+    if (rebaseStopped(repo)) {
+      return 'A git pull --rebase stopped partway because this laptop and GitHub changed the same lines. Go back with git rebase --abort, then get help from someone who knows git.';
+    }
     return `./add works on main, and this copy of the repo is on ${branch.out || 'no branch'}. Switch with: git switch main`;
   }
   const changed = git(repo, 'status', '--porcelain', '--untracked-files=all', '--', 'drawings');
@@ -38,7 +43,7 @@ export function getReady(repo) {
     // When GitHub has commits this laptop doesn't, a plain git push would be refused.
     const behind = Number(git(repo, 'rev-list', '--count', 'HEAD..origin/main').out);
     if (behind > 0) {
-      return `${notYet}, and GitHub has changed too. Get its changes first with git pull --rebase, then send yours with git push, and try again.`;
+      return `${notYet}, and GitHub has changed too. Get its changes first with git pull --rebase --autostash, then send yours with git push, and try again.`;
     }
     return `${notYet}. Send ${ahead === 1 ? 'it' : 'them'} with git push, or remove ${ahead === 1 ? 'it' : 'them'}, then try again.`;
   }
@@ -52,6 +57,12 @@ export function getReady(repo) {
     return `Couldn't bring this copy of the repo up to date with GitHub. (git says: ${merge.err})`;
   }
   return null;
+}
+
+// Whether a rebase is under way: git keeps its state in one of these two folders
+// (which one depends on how git was set up) until the rebase ends.
+function rebaseStopped(repo) {
+  return ['rebase-merge', 'rebase-apply'].some((name) => existsSync(resolve(repo, git(repo, 'rev-parse', '--git-path', name).out)));
 }
 
 // The files git names when the laptop's own changes stop it taking GitHub's
