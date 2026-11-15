@@ -22,10 +22,10 @@ export class BuildStopped extends Error {
 }
 
 // Folder contents in name order, leaving out hidden files like .DS_Store, which macOS adds by itself.
-const visible = (names) => names.filter((n) => !n.startsWith('.')).sort();
+export const visible = (names) => names.filter((n) => !n.startsWith('.')).sort();
 
 // The file's size and orientation if it's a whole JPEG, or null if it isn't.
-async function readJpeg(path) {
+export async function readJpeg(path) {
   const buf = readFileSync(path);
   try {
     keepOnlyOrientation(buf); // walks every block to the end of the picture; throws if it isn't a whole JPEG

@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+// ./add: adds one drawing to the gallery (#14). `./add --help` says how.
+// The code is in commands/add.mjs.
+import('./commands/add.mjs')
+  .then((command) => command.main(process.argv.slice(2)))
+  .then((code) => {
+    process.exitCode = code;
+  });

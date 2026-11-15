@@ -10,8 +10,14 @@ You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stry
 
 - `npm install` installs the tools, once.
 - `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. Open `dist/index.html` in a browser to see the site, and `dist/drawings.json` for the list of drawings.
+- `./add 2026-11-03.jpg` adds one drawing and sends it to GitHub; the site shows it about 2 minutes later. Run it on main. It gets the latest version from GitHub first, checks the file, says what it will do and asks for a yes. It changes nothing if anything is wrong, and undoes everything if sending to GitHub fails.
+  - `./add photo.jpg --date 2026-11-03` adds a file that isn't named by date, and gives it that name.
+  - `--replace` replaces the drawing already there for that date. Without it, `./add` refuses a date that already has a drawing.
+  - `--yes` doesn't ask before adding.
+  - `./add --help` lists these.
+- `npm run try-add` tries `./add` safely: it runs the real `./add` code on a throwaway copy of the repo in a temporary folder, with a stand-in for GitHub there too. `npm run try-add -- --date 2026-11-03` tries a date that already has a drawing; add `--replace` to replace it.
 - `npm test` runs the site's tests.
-- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name and drawing code and checks that a test catches each one. It takes about a minute.
+- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name, drawing and `./add` code and checks that a test catches each one. It takes about 10 minutes.
 - `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.
 
@@ -32,7 +38,11 @@ GitHub runs the same build and both sets of tests, the site's and the map script
 | build/drawings.mjs | Reads the drawings folder, checks the file rules, makes the thumbnails, the full-size copies and the list of drawings | Claude |
 | build/dates.mjs | Turns a file name like `2025-10-07.jpg` into a date and back, and writes labels like "October 7" | Claude |
 | build/jpeg.mjs | Removes hidden notes, like the place a photo was taken, from the full-size copies, keeping only which way is up | Claude |
+| add | The `./add` command; its code is in `commands/add.mjs` | the human |
+| commands/add.mjs | What `./add` does: checks the file, asks, adds it | Claude |
+| commands/git.mjs | Gets the latest version from GitHub, and sends drawings to it, undoing everything if that fails | Claude |
 | tests/ | The site's automatic tests, run by `npm test` | Claude |
+| tests/sandbox.mjs, tests/try-add.mjs | A throwaway copy of the repo with a stand-in for GitHub, used by the `./add` tests and by `npm run try-add` | Claude |
 | tests/fixtures/ | Test drawings, used until the real ones are in `drawings/`, and `make-fixtures.mjs`, which makes them | Claude |
 | stryker.config.json | Settings for Stryker, run by `npm run mutation` | Claude |
 | .gitignore | Files git leaves out of the repo | Claude |
