@@ -5,6 +5,7 @@
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
+import { headersFor } from '../build/headers.mjs';
 
 const dir = resolve(process.argv[2] ?? 'dist');
 const port = Number(process.argv[3] ?? 4173);
@@ -33,6 +34,8 @@ createServer((req, res) => {
     file = join(file, 'index.html');
   }
   if (!existsSync(file)) file = join(dir, 'index.html');
-  res.writeHead(200, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream' });
+  // The browser rules in _headers, sent the way Cloudflare sends them (#20).
+  const rules = existsSync(join(dir, '_headers')) ? headersFor(readFileSync(join(dir, '_headers'), 'utf8'), path) : {};
+  res.writeHead(200, { ...rules, 'Content-Type': types[extname(file)] ?? 'application/octet-stream' });
   res.end(readFileSync(file));
 }).listen(port, () => console.log(`Serving ${dir} at http://localhost:${port}/`));

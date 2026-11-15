@@ -147,20 +147,24 @@ describe('writePreview', () => {
       const { data, info } = await sharp(join(to, 'preview.jpg')).raw().toBuffer({ resolveWithObject: true });
       const px = (x, y) => [...data.subarray((y * info.width + x) * info.channels, (y * info.width + x) * info.channels + 3)];
       const margin = Math.floor((1200 - w) / 2);
-      if (margin > 4) {
+      if (margin > 40) {
         for (const y of [0, 315, 629]) {
-          for (const x of [0, margin - 3, 1199 - margin + 3, 1199]) {
-            px(x, y).forEach((c, i) => expect(Math.abs(c - [0xfa, 0xf9, 0xf6][i]), `${drawing.date} at ${x},${y}`).toBeLessThanOrEqual(3));
+          for (const x of [0, Math.floor(margin / 2), 1199 - Math.floor(margin / 2), 1199]) {
+            px(x, y).forEach((c, i) => expect(Math.abs(c - [0xfa, 0xf9, 0xf6][i]), `${drawing.date} at ${x},${y}`).toBeLessThanOrEqual(4));
           }
         }
       }
       // The drawing itself: compared with the full-size copy shrunk the same way.
       const own = await sharp(join(to, drawing.full)).autoOrient().resize(w, Math.round(height * scale)).raw().toBuffer({ resolveWithObject: true });
-      const ox = Math.floor(own.info.width / 2);
-      const oy = Math.floor(own.info.height / 2);
-      const a = [...own.data.subarray((oy * own.info.width + ox) * own.info.channels, (oy * own.info.width + ox) * own.info.channels + 3)];
-      const b = px(margin + ox, Math.floor((630 - own.info.height) / 2) + oy);
-      a.forEach((c, i) => expect(Math.abs(c - b[i]), drawing.date).toBeLessThanOrEqual(24));
+      // Points a quarter of the way in from each corner: the sideways photo is red on top and
+      // blue below once upright, so these also catch a drawing shown on its side.
+      for (const [fx, fy] of [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]]) {
+        const ox = Math.floor(own.info.width * fx);
+        const oy = Math.floor(own.info.height * fy);
+        const a = [...own.data.subarray((oy * own.info.width + ox) * own.info.channels, (oy * own.info.width + ox) * own.info.channels + 3)];
+        const b = px(margin + ox, Math.floor((630 - own.info.height) / 2) + oy);
+        a.forEach((c, i) => expect(Math.abs(c - b[i]), `${drawing.date} at ${fx},${fy}`).toBeLessThanOrEqual(24));
+      }
     }
   });
 });

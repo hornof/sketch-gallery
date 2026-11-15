@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { BuildStopped, buildDrawings } from './drawings.mjs';
 import { writeSite } from './pages.mjs';
+import { pickPreview, writePreview } from './preview.mjs';
+import { writeHeaders } from './headers.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
@@ -20,6 +22,12 @@ try {
   console.log(`Wrote ${list.length} drawings: dist/drawings.json, dist/thumbs/, dist/full/`);
   writeSite({ list, to: dist });
   console.log('Wrote dist/index.html, a page for each year in dist/YYYY/, dist/site.js and dist/fonts/');
+  // The link preview image and the browser rules (#20).
+  const { drawing, warning } = pickPreview(list);
+  if (warning) console.log(`Note: ${warning}`);
+  await writePreview({ drawing, to: dist });
+  writeHeaders(dist);
+  console.log(`Wrote dist/preview.jpg (from ${drawing.date}) and dist/_headers`);
 } catch (err) {
   if (!(err instanceof BuildStopped)) throw err;
   console.error(err.message);

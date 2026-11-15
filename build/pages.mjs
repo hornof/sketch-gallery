@@ -6,9 +6,11 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { THUMB_LONG_SIDE } from './drawings.mjs';
+import { SITE, pickPreview, previewTags } from './preview.mjs';
 
-export const TITLE = 'Sketch Gallery';
-export const DESCRIPTION = 'This gallery displays drawings made over several years.';
+// From site.json, which also feeds the link preview (#20).
+export const TITLE = SITE.title;
+export const DESCRIPTION = SITE.description;
 
 // How many thumbnails load right away. The rest wait until the visitor scrolls near
 // them (TDD section 5). Four fill a phone's first screen; on wider screens the
@@ -114,6 +116,7 @@ export function renderPage({ year, list, home = false }) {
 <meta name="color-scheme" content="light">
 <title>${home ? TITLE : `${year} · ${TITLE}`}</title>
 <meta name="description" content="${DESCRIPTION}">
+${previewTags({ path: home ? '/' : `/${year}/`, drawing: pickPreview(list).drawing })}
 ${FONTS.map((f) => `<link rel="preload" href="${fontUrl(f)}" as="font" type="font/woff2" crossorigin>`).join('\n')}
 <script src="${SCRIPT}" defer></script>
 <style>

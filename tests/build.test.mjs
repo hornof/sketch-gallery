@@ -100,6 +100,7 @@ describe('build/build.mjs with no drawings/ folder', () => {
     const copy = realpathSync(mkdtempSync(join(tmpdir(), 'sketch-gallery-no-drawings-')));
     onTestFinished(() => rmSync(copy, { recursive: true, force: true }));
     cpSync(join(root, 'build'), join(copy, 'build'), { recursive: true });
+    cpSync(join(root, 'site.json'), join(copy, 'site.json')); // the build reads it (#20)
     symlinkSync(join(root, 'node_modules'), join(copy, 'node_modules'), 'dir');
     const run = spawnSync(process.execPath, [join(copy, 'build', 'build.mjs')], { cwd: copy, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
     expect(run.status).toBe(1);

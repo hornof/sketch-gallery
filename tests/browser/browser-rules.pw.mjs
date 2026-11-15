@@ -63,19 +63,19 @@ test('code from the site runs; code written into the page or from another site d
   expect(refused.some((v) => v.startsWith('script-src') && v.includes('inline'))).toBe(true);
 });
 
-// A page on another site that shows the gallery in a frame, served by the test itself.
+// A page on another site that shows the gallery in a frame, served by the test itself. The
+// gallery is framed at its real address, which the test answers from the local copy with
+// its headers, since browsers won't put a page on http://localhost inside an https page.
 async function framedFrom(page, origin) {
-  await page.route(`${origin}/`, (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><iframe src="${SITE}/" onload="window.framed = true"></iframe>` }));
+  const LIVE = 'https://sketch-gallery.hornof.org';
+  await page.route(`${LIVE}/**`, async (r) => r.fulfill({ response: await r.fetch({ url: r.request().url().replace(LIVE, SITE) }) }));
+  await page.route(`${origin}/`, (r) => r.fulfill({ contentType: 'text/html', body: `<!doctype html><iframe src="${LIVE}/" onload="window.framed = true"></iframe>` }));
   await page.goto(`${origin}/`);
   await page.waitForFunction(() => window.framed === true);
   return page.frames().find((f) => f !== page.mainFrame());
 }
 
 test.describe('who may show the site in a frame', () => {
-  // WebKit refuses a page on http://localhost inside an https page whatever the rules say,
-  // so it can't show the allowed case.
-  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit blocks http://localhost inside an https page');
-
   test('hornof.org may', async ({ page }) => {
     const frame = await framedFrom(page, 'https://hornof.org');
     await expect(frame.locator('h1')).toHaveText('Sketch Gallery');
