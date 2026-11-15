@@ -31,8 +31,8 @@ test('the site itself breaks no rule: every year, every drawing\'s thumbnail, th
   for (const year of years) {
     await page.getByRole('navigation', { name: 'Years' }).getByRole('link', { name: String(year), exact: true }).click();
     await expect(page.locator('[aria-current="page"]')).toHaveText(String(year));
-    // Scroll to the end, so every thumbnail loads.
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    // Every thumbnail loads now, not only the ones near the screen.
+    await page.locator('.grid img').evaluateAll((imgs) => imgs.forEach((i) => (i.loading = 'eager')));
     await expect.poll(() => page.locator('.grid img').evaluateAll((imgs) => imgs.every((i) => i.complete && i.naturalWidth > 0))).toBe(true);
   }
   await page.evaluate(() => document.fonts.ready);
@@ -93,14 +93,22 @@ async function framedFrom(page, origin) {
   return page.frames().find((f) => f !== page.mainFrame());
 }
 
+// The frame's heading, or '' if it shows no page of ours. A refused frame in Firefox never
+// answers, so the question gives up after 3 seconds.
+const headingIn = (frame) =>
+  Promise.race([
+    frame.evaluate(() => document.querySelector('h1')?.textContent ?? '').catch(() => ''),
+    new Promise((resolve) => setTimeout(() => resolve(''), 3000)),
+  ]);
+
 test.describe('who may show the site in a frame', () => {
   test('hornof.org may', async ({ page }) => {
     const frame = await framedFrom(page, 'https://hornof.org');
-    await expect(frame.locator('h1')).toHaveText('Sketch Gallery');
+    await expect.poll(() => headingIn(frame)).toBe('Sketch Gallery');
   });
 
   test('another site may not', async ({ page }) => {
     const frame = await framedFrom(page, 'https://elsewhere.example');
-    expect(await frame.locator('h1').count()).toBe(0);
+    expect(await headingIn(frame)).toBe('');
   });
 });
