@@ -9,11 +9,11 @@ Built with the apb process: https://github.com/hornof/apb
 You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stryker asks for Node 22.18 or later; on an older 22 it warns but runs. From the repo folder:
 
 - `npm install` installs the tools, once.
-- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. `npm run build -- --drawings <folder>` builds from another folder laid out the same way.
+- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. `npm run build -- --drawings <folder>` builds from another folder laid out the same way. That folder must hold only year folders: to try the placeholder drawings, copy the six year folders of `../sketch-gallery-placeholders` into an empty folder first.
 - `npm run serve` shows the built site at http://localhost:4173/, the way Cloudflare serves it. `dist/drawings.json` is the list of drawings.
 - `npm test` runs the site's tests.
 - `npm run test:browser` runs the browser tests on the built site: Chromium, Firefox and WebKit at 375, 768 and 1440 px wide. The first time, `npx playwright install chromium firefox webkit` downloads the browsers. After building with `--drawings <folder>`, run `DRAWINGS=<folder> npm run test:browser` so the tests expect that folder's drawings.
-- `npm run lighthouse` runs Lighthouse, Google's page-speed check, on the built site, as a phone would see it, and fails below 90 for speed or accessibility. `node scripts/lighthouse-scores.mjs` prints the scores. It needs Chrome and Node 22.19 or later.
+- `npm run lighthouse` runs Lighthouse, Google's page-speed check, on the built site, as a phone would see it, and fails below 90 for speed or accessibility. `node scripts/lighthouse-scores.mjs` prints the scores. It needs Chrome and Node 22.19 or later. Lighthouse runs through `npx` at a fixed version rather than from package.json, because listing it there adds 13 high-severity warnings to `npm audit`; keep it out of package.json.
 - `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name and drawing code and checks that a test catches each one. It takes about a minute.
 - `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.

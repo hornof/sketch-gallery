@@ -4,7 +4,7 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** Build. Next: [#14](https://github.com/hornof/sketch-gallery/issues/14) (`./add`) and [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid)
+**Now:** Build. In review: [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid), which waits for [#15](https://github.com/hornof/sketch-gallery/issues/15). Next: [#14](https://github.com/hornof/sketch-gallery/issues/14) (`./add`), then [#15](https://github.com/hornof/sketch-gallery/issues/15) (`./import`).
 
 ```mermaid
 flowchart LR
@@ -36,7 +36,7 @@ flowchart LR
 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests; the browser tests and Lighthouse run beside them | Every PR, every push to main |
 | [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`; then the home page and one page per year, made by `build/pages.mjs` | Every build |
 | [tests/](../tests/) | The site's automatic tests, run by `npm test`, and the browser tests in `tests/browser/`, run by `npm run test:browser` in Chromium, Firefox and WebKit at 375, 768 and 1440 px | Every PR, every push to main |
-| [playwright.config.mjs](../playwright.config.mjs), [lighthouserc.json](../lighthouserc.json) | Settings for the browser tests, and for Lighthouse (Google's page-speed check, which must score at least 90 on a phone) | Every PR, every push to main |
+| [playwright.config.mjs](../playwright.config.mjs), [lighthouserc.json](../lighthouserc.json) | Settings for the browser tests, and for Lighthouse (Google's page-speed check, which must score at least 90 on a phone), and [scripts/lighthouse-scores.mjs](../scripts/lighthouse-scores.mjs), which prints the Lighthouse scores | Every PR, every push to main |
 | [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The build uses them until `drawings/` exists. | Every PR, until the real drawings are loaded |
 | [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name and drawing code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
@@ -51,6 +51,7 @@ Web pages Claude makes and hosts on claude.ai. Each is private to its owner unti
 | [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci) (plain page) | Every placeholder drawing by year, newest year first, plus the ones set aside | While the drawings were made; reference |
 | [Placeholder Drawing Trials](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV) (plain page) | Six drawing sources compared, which led to choosing ChatGPT | Done; kept for the record |
 | [Thumbnail Size Check](https://claude.ai/artifact/BTyoAzjMcVd7Sew6XvW298) (plain page) | Three drawings as 600 and 500 pixel thumbnails, side by side; the human chose 500 from it | Done; kept for the record |
+| [Gallery Grid Preview](https://claude.ai/artifact/41sbeWZm5yDSiGRenbXgxB) (plain page) | Screenshots of the year pages with all 161 drawings, for the human's look at PR #27 | Done; kept for the record |
 
 ## On the human's computer
 Folders, and scheduled tasks that run Claude unattended.

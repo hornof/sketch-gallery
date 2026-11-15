@@ -19,6 +19,7 @@ The human's rulings on past reviews. The reviewer reads this file before every r
 - Write "R6 (next and previous)", not just "R6", and say which list "issue 5" belongs to. (#10)
 - Only the human resolves threads. The reviewer and the orchestrator never resolve them. Resolved means the discussion is over, not that the fix is made; the after-fix check covers every item, resolved or not, and reopens any that wasn't fixed. (#10)
 - Read every page of comments (`gh api ... --paginate`). Before saying every comment is answered, count them. (#10)
+- A thread the human resolves with no reply means yes: the fix as written, or the recommendation. If a resolved thread has no fix or recommendation to accept, the orchestrator reopens it and asks. (#27)
 
 ## Names
 - One name per thing, everywhere: repo files, PR titles and descriptions, issue titles and bodies, the board and Claude artifacts. (#7)
