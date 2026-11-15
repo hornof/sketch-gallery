@@ -34,14 +34,20 @@ export function getReady(repo) {
   // this message, not git's refusal to fast-forward.
   const ahead = Number(git(repo, 'rev-list', '--count', 'origin/main..HEAD').out);
   if (ahead > 0) {
-    return `main has ${plural(ahead, 'commit')} that ${ahead === 1 ? 'isn\'t' : 'aren\'t'} on GitHub yet. Send ${ahead === 1 ? 'it' : 'them'} with git push, or remove ${ahead === 1 ? 'it' : 'them'}, then try again.`;
+    const notYet = `main has ${plural(ahead, 'commit')} that ${ahead === 1 ? 'isn\'t' : 'aren\'t'} on GitHub yet`;
+    // When GitHub has commits this laptop doesn't, a plain git push would be refused.
+    const behind = Number(git(repo, 'rev-list', '--count', 'HEAD..origin/main').out);
+    if (behind > 0) {
+      return `${notYet}, and GitHub has changed too. Get its changes first with git pull --rebase, then send yours with git push, and try again.`;
+    }
+    return `${notYet}. Send ${ahead === 1 ? 'it' : 'them'} with git push, or remove ${ahead === 1 ? 'it' : 'them'}, then try again.`;
   }
   const merge = git(repo, 'merge', '-q', '--ff-only', 'origin/main');
   if (!merge.ok) {
     const files = blockingFiles(merge.err);
     if (files.length > 0) {
       const list = files.length === 1 ? files[0] : `${files.slice(0, -1).join(', ')} and ${files.at(-1)}`;
-      return `${list} ${files.length === 1 ? 'has' : 'have'} changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.`;
+      return `${list} ${files.length === 1 ? 'has' : 'have'} changes on this laptop that GitHub also changed. Copy them somewhere else and undo them, then try again.`;
     }
     return `Couldn't bring this copy of the repo up to date with GitHub. (git says: ${merge.err})`;
   }
