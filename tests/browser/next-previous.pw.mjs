@@ -193,6 +193,46 @@ test.describe('R6 (next and previous)', () => {
     }
   });
 
+  // The arrow's round dark circle and its edge, as computed by the browser.
+  const arrowLook = (page, name) =>
+    button(page, name).evaluate((b) => {
+      const s = getComputedStyle(b);
+      return { background: s.backgroundColor, border: `${s.borderTopWidth} ${s.borderTopStyle} ${s.borderTopColor}`, radius: s.borderTopLeftRadius };
+    });
+  function expectRound(look, label) {
+    const alpha = Number(look.background.match(/rgba?\(([^)]*)\)/)[1].split(',')[3] ?? 1);
+    expect(alpha, `${label}: background ${look.background}`).toBeGreaterThan(0.5);
+    expect(look.border, label).toMatch(/^1px solid /);
+    expect(look.radius, label).toBe('50%');
+  }
+
+  test('the round arrows keep their dark circle and edge while the mouse is over one and while one has the focus', async ({ page }) => {
+    await openAt(page, dates[1]);
+    const before = await arrowLook(page, 'Next');
+    expectRound(before, 'before');
+    await button(page, 'Next').hover();
+    expect(await arrowLook(page, 'Next')).toEqual(before);
+    await page.mouse.move(1, 1);
+    await button(page, 'Previous').focus();
+    expect(await arrowLook(page, 'Previous')).toEqual(before);
+  });
+
+  test.describe('on a phone', () => {
+    test.use({ hasTouch: true });
+    test('after a tap on an arrow, both arrows keep their dark circle and edge', async ({ page }) => {
+      test.skip(page.viewportSize().width !== 375, 'phone width only');
+      await page.goto(`/${biggest}/`);
+      await tileFor(page, dates[1]).tap();
+      await waitOpen(page);
+      const before = await arrowLook(page, 'Next');
+      expectRound(before, 'before');
+      await button(page, 'Next').tap();
+      await expectShowing(page, dates[2]);
+      expect(await arrowLook(page, 'Next')).toEqual(before);
+      expect(await arrowLook(page, 'Previous')).toEqual(before);
+    });
+  });
+
   test('in a year of 31 drawings, the seventh reads "7 / 31" and "October 7, 2026"', async ({ page }) => {
     test.skip(!byYear.get(2026)?.includes('2026-10-07') || byYear.get(2026).length !== 31, 'needs the 31 drawings of October 2026');
     await openAt(page, '2026-10-07');
