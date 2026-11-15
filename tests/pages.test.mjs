@@ -53,10 +53,15 @@ const listArb = fc
 const october = listFrom(Array.from({ length: 31 }, (_, i) => `2025-10-${String(i + 1).padStart(2, '0')}`));
 
 // Pieces of a page, read with patterns that match the markup the build writes.
+// The grid is the one shown; other years' drawings wait in <template>s (#17).
 const menuYears = (html) => [...html.matchAll(/<a href="\/(\d{4})\/"/g)].map((m) => Number(m[1]));
 const currentYears = (html) => [...html.matchAll(/<a href="\/(\d{4})\/" aria-current="page"/g)].map((m) => Number(m[1]));
-const tileDates = (html) => [...html.matchAll(/<img src="\/thumbs\/\d{4}\/(\d{4}-\d{2}-\d{2})\.webp"/g)].map((m) => m[1]);
-const imgs = (html) => [...html.matchAll(/<img [^>]*>/g)].map((m) => m[0]);
+const gridOf = (html) => html.match(/<ul class="grid">([\s\S]*?)<\/ul>/)[1];
+const tileDates = (html) => [...gridOf(html).matchAll(/<img src="\/thumbs\/\d{4}\/(\d{4}-\d{2}-\d{2})\.webp"/g)].map((m) => m[1]);
+const imgs = (html) => [...gridOf(html).matchAll(/<img [^>]*>/g)].map((m) => m[0]);
+const templates = (html) =>
+  [...html.matchAll(/<template data-year="(\d{4})" data-count="([^"]*)">([\s\S]*?)<\/template>/g)].map((m) => ({ year: Number(m[1]), count: m[2], tiles: m[3] }));
+const countOf = (html) => html.match(/<h2 class="count"[^>]*>([^<]*)<\/h2>/)[1];
 
 describe('renderPage', () => {
   it('lists every year once, newest first, with only the shown year current', () => {
@@ -84,7 +89,7 @@ describe('renderPage', () => {
             expect(html).toContain(`>${d.label}<`);
           }
           const n = mine.length;
-          expect(html).toContain(`<h2 class="count">${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}</h2>`);
+          expect(countOf(html)).toBe(`${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}`);
         }
       }),
     );
@@ -136,6 +141,45 @@ describe('renderPage', () => {
     expect(tag).toContain('height="500"');
   });
 
+  // Switching years in place (#17): each page holds every other year's tiles, so the
+  // menu can change the grid without loading a page or downloading anything else.
+  it('holds every other year\'s tiles, exactly as that year\'s own page shows them, with its count', () => {
+    fc.assert(
+      fc.property(listArb, fc.boolean(), (list, home) => {
+        const years = [...new Set(list.map((d) => d.year))].sort((a, b) => b - a);
+        for (const year of home ? [years[0]] : years) {
+          const html = renderPage({ year, list, home });
+          const held = templates(html);
+          expect(held.map((t) => t.year)).toEqual(years.filter((y) => y !== year));
+          for (const t of held) {
+            const own = renderPage({ year: t.year, list });
+            expect(t.tiles).toBe(gridOf(own));
+            expect(t.count).toBe(countOf(own));
+          }
+        }
+      }),
+    );
+  });
+
+  it('a page with one year holds no other year', () => {
+    expect(templates(renderPage({ year: 2025, list: october }))).toEqual([]);
+  });
+
+  it('the count is read out by screen readers when the year changes in place', () => {
+    const html = renderPage({ year: 2025, list: october });
+    expect(html).toContain('<h2 class="count" aria-live="polite">2025 · 31 drawings</h2>');
+  });
+
+  it('loads the page code from the site itself, after the page is read, and works without it', () => {
+    const html = renderPage({ year: 2025, list: october });
+    expect(html.match(/<script[^>]*>/g)).toEqual(['<script src="/site.js" defer>']);
+    // No code written into the page itself, so the browser rules of issue 9 can allow only the site's own files.
+    expect(html).not.toMatch(/<script>|<script [^>]*>[^<]/);
+    expect(html).not.toMatch(/ on[a-z]+="/);
+    // With JavaScript off, every year is still a plain link to its own page.
+    expect(menuYears(html)).toEqual([2025]);
+  });
+
   it('stays light even when the device is set to dark', () => {
     const html = renderPage({ year: 2025, list: listFrom(['2025-10-07']) });
     expect(html).toContain('<meta name="color-scheme" content="light">');
@@ -180,6 +224,12 @@ describe('writeSite', () => {
     expect(urls.length).toBeGreaterThanOrEqual(2);
     for (const url of urls) expect(existsSync(join(to, url))).toBe(true);
     expect(html).not.toMatch(/fonts\.googleapis|fonts\.gstatic/);
+  });
+
+  it('puts the page code on the site, the same file as build/site.js', () => {
+    const to = tmp('site');
+    writeSite({ list: listFrom(['2024-10-01', '2025-10-01']), to });
+    expect(readFileSync(join(to, 'site.js'), 'utf8')).toBe(readFileSync(join(root, 'build', 'site.js'), 'utf8'));
   });
 
   it('R12 (add one drawing): a new year appears in every page\'s menu', async () => {
