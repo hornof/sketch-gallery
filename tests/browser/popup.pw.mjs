@@ -27,9 +27,9 @@ const biggest = years.reduce((a, b) => (byYear.get(b).length > byYear.get(a).len
 
 // R8 (motion): every animation finishes within this many milliseconds.
 const MOTION_MS = 350;
-// What a measured animation may run over MOTION_MS: the browser draws a frame about
-// every 16 ms, and a busy test machine can drop a few.
-const FRAME_SLACK_MS = 50;
+// What a measured motion may run over MOTION_MS: the browser draws a frame about every
+// 16 ms, and the first and last change are each seen up to a frame late.
+const FRAME_SLACK_MS = 34;
 
 const menu = (page) => page.getByRole('navigation', { name: 'Years' });
 const yearLink = (page, year) => menu(page).getByRole('link', { name: String(year), exact: true });
@@ -88,7 +88,7 @@ const shownRect = (page) =>
   }, shownImage);
 
 function expectSameRect(actual, expected, label) {
-  for (const k of ['x', 'y', 'w', 'h']) expect(Math.abs(actual[k] - expected[k]), `${label}: ${k} ${actual[k]} vs ${expected[k]}`).toBeLessThanOrEqual(2);
+  for (const k of ['x', 'y', 'w', 'h']) expect(Math.abs(actual[k] - expected[k]), `${label}: ${k} of ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`).toBeLessThanOrEqual(2);
 }
 
 // Starts watching the pop-up's animations, from before an action until it has been still
@@ -101,8 +101,9 @@ const holdAnimations = (page, at) =>
       new Promise((resolve, reject) => {
         const t0 = performance.now();
         const step = () => {
-          const anims = document.getAnimations().filter((a) => a.effect?.target?.closest?.('.pswp'));
-          if (anims.length) {
+          const anims = document.getAnimations().filter((a) => a.effect?.target?.closest?.('.pswp') && !a.effect.target.closest('.pswp__preloader'));
+          // The buttons start fading a frame before the drawing moves; wait for the drawing.
+          if (anims.some((a) => a.effect.target.classList.contains('pswp__zoom-wrap'))) {
             for (const a of anims) {
               a.pause();
               a.currentTime = at === 'start' ? 0 : a.effect.getComputedTiming().endTime;
@@ -118,60 +119,68 @@ const holdAnimations = (page, at) =>
     { at, code: shownImage },
   );
 
-// Starts timing the pop-up's motion: every frame, notes whether anything about it on the
-// screen changed (the dark background's opacity, the drawing's place and size, the pop-up
-// appearing or going), and the length every animation the browser runs in it was given.
-// endWatch waits until nothing has changed for 600 ms and reports.
+// Starts timing each of the pop-up's motions, as the visitor sees them: every frame, for
+// each moving part (the dark background's and the buttons' opacity, the drawing's place
+// and size), notes whether it changed since the last frame. A part's motion runs from its
+// first change to its last; a part appearing or going isn't a change. Also notes the
+// length every animation the browser runs in the pop-up was given. endWatch waits until
+// nothing has changed for 600 ms and reports the longest motion.
 const startWatch = (page) =>
   page.evaluate(() => {
-    const look = () => {
-      const p = document.querySelector('.pswp');
-      if (!p) return 'none';
-      const parts = [getComputedStyle(p.querySelector('.pswp__bg')).opacity];
-      for (const el of p.querySelectorAll('.pswp__container, .pswp__zoom-wrap, img.pswp__img')) {
-        const r = el.getBoundingClientRect();
-        parts.push(getComputedStyle(el).transform, Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height));
-      }
-      return parts.join('|');
+    const parts = () => {
+      const now = new Map();
+      for (const el of document.querySelectorAll('.pswp .pswp__bg, .pswp .pswp__top-bar, .pswp .pswp__button')) now.set(el, getComputedStyle(el).opacity);
+      for (const el of document.querySelectorAll('.pswp .pswp__container, .pswp .pswp__zoom-wrap')) now.set(el, getComputedStyle(el).transform);
+      return now;
     };
-    const w = { changes: [], lengths: [] };
+    const w = { motions: new Map(), lengths: [] };
     const seen = new Set();
-    let last = look();
+    let last = parts();
     window.motion = w;
     w.done = new Promise((resolve) => {
       const t0 = performance.now();
       let still = t0;
       const step = (t) => {
-        const now = look();
-        if (now !== last) {
-          w.changes.push(t);
-          last = now;
-          still = t;
+        const now = parts();
+        for (const [el, value] of now) {
+          if (last.has(el) && last.get(el) !== value) {
+            const m = w.motions.get(el) ?? { first: t, last: t };
+            m.last = t;
+            w.motions.set(el, m);
+            still = t;
+          }
         }
+        if (now.size !== last.size) still = t;
+        last = now;
         for (const a of document.getAnimations()) {
+          // The loading indicator, which spins only while a drawing is slow to load, isn't counted.
+          if (a.effect?.target?.closest?.('.pswp__preloader')) continue;
           if (!seen.has(a)) {
             seen.add(a);
             w.lengths.push(a.effect.getComputedTiming().endTime);
           }
         }
-        if ((w.changes.length && t - still > 600) || t - t0 > 8000) resolve();
+        if ((still > t0 && t - still > 600) || t - t0 > 8000) resolve();
         else requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
     });
   });
+// { span: the longest motion in ms, moved: how many parts moved, lengths: each animation's given length }
 const endWatch = (page) =>
   page.evaluate(async () => {
     await window.motion.done;
-    const { changes, lengths } = window.motion;
-    return { span: changes.length ? changes.at(-1) - changes[0] : 0, frames: changes.length, lengths };
+    const { motions, lengths } = window.motion;
+    const spans = [...motions.values()].map((m) => m.last - m.first);
+    return { span: Math.max(0, ...spans), moved: spans.length, lengths };
   });
 
-// Waits until the pop-up is open and still.
+// Waits until the pop-up is open and still, with the full-size drawing loaded in place
+// of the thumbnail it shows at first.
 async function waitOpen(page) {
   await expect(popup(page)).toHaveClass(/pswp--open/);
-  await expect.poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running').length)).toBe(0);
-  await expect.poll(() => page.evaluate((code) => !!eval(code), shownImage)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && !a.effect?.target?.closest?.('.pswp__preloader')).length)).toBe(0);
+  await expect.poll(() => page.evaluate((code) => !!eval(code) && eval(code).complete && !eval(code).classList.contains('pswp__img--placeholder'), shownImage)).toBe(true);
 }
 const waitClosed = (page) => expect(popup(page)).toHaveCount(0);
 
@@ -196,12 +205,20 @@ async function swipeDown(page, browserName) {
   if (browserName === 'chromium') {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-    for (let i = 1; i <= 10; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 30 }] });
+    for (let i = 1; i <= 10; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 30 }] });
+      await page.waitForTimeout(20);
+    }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   } else {
+    // A frame apart, as a finger moves: the pop-up follows the pointer once a frame, and
+    // a drag sent all within one frame doesn't move it at all.
     await page.mouse.move(x, y);
     await page.mouse.down();
-    await page.mouse.move(x, y + 300, { steps: 10 });
+    for (let i = 1; i <= 10; i++) {
+      await page.mouse.move(x, y + i * 30);
+      await page.waitForTimeout(20);
+    }
     await page.mouse.up();
   }
 }
@@ -260,6 +277,25 @@ test.describe('R5 (pop-up)', () => {
     expect(await page.evaluate(() => window.samePage)).toBe(true);
     expect(new URL(page.url()).pathname).toBe(`/${biggest}/`);
     expect(await page.evaluate(() => window.scrollY)).toBe(y);
+  });
+
+  test('when a drawing is a different shape from its tile, the zoom still starts and ends on the drawing, not on its tile', async ({ page }) => {
+    // Every drawing in drawings/ has nearly the tile's shape, so this makes the tiles much
+    // taller instead, as a wide phone photo would sit in a tile, with white above and below.
+    await page.goto(`/${biggest}/`);
+    await page.addStyleTag({ content: '.grid a{aspect-ratio:1/2}' });
+    const { date } = await scrollToMiddle(page);
+    const thumb = await thumbRect(page, date);
+    const box = await tileFor(page, date).locator('img').evaluate((i) => i.getBoundingClientRect().height);
+    expect(box - thumb.h).toBeGreaterThan(20);
+    const start = holdAnimations(page, 'start');
+    await tileFor(page, date).click();
+    expectSameRect(await start, thumb, 'first frame');
+    await waitOpen(page);
+    const end = holdAnimations(page, 'end');
+    await page.keyboard.press('Escape');
+    expectSameRect(await end, thumb, 'last frame');
+    await waitClosed(page);
   });
 
   for (const [way, close] of Object.entries(closeWays)) {
@@ -410,7 +446,9 @@ test.describe('R8 (motion)', () => {
     const open = await endWatch(page);
     expect(open.lengths.length, 'the pop-up should open with an animation').toBeGreaterThan(0);
     for (const ms of open.lengths) expect(ms).toBeLessThanOrEqual(MOTION_MS);
-    expect(open.frames).toBeGreaterThan(3);
+    // A motion the eye can follow, not a jump.
+    expect(open.moved).toBeGreaterThan(0);
+    expect(open.span).toBeGreaterThan(100);
     expect(open.span).toBeLessThanOrEqual(MOTION_MS + FRAME_SLACK_MS);
     await waitOpen(page);
     await startWatch(page);
@@ -418,9 +456,18 @@ test.describe('R8 (motion)', () => {
     const close = await endWatch(page);
     expect(close.lengths.length, 'the pop-up should close with an animation').toBeGreaterThan(0);
     for (const ms of close.lengths) expect(ms).toBeLessThanOrEqual(MOTION_MS);
-    expect(close.frames).toBeGreaterThan(3);
+    expect(close.moved).toBeGreaterThan(0);
+    expect(close.span).toBeGreaterThan(100);
     expect(close.span).toBeLessThanOrEqual(MOTION_MS + FRAME_SLACK_MS);
     await waitClosed(page);
+  });
+
+  test('once the drawing has loaded, nothing in the pop-up keeps moving, not even the hidden loading indicator', async ({ page }) => {
+    await page.goto(`/${newest}/`);
+    await tileFor(page, byYear.get(newest)[0]).click();
+    await waitOpen(page);
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => document.getAnimations().map((a) => a.effect.target.className))).toEqual([]);
   });
 
   test('when the device asks for less motion, the pop-up opens and closes with no animation', async ({ page }) => {
@@ -464,7 +511,8 @@ test.describe('R8 (motion)', () => {
         } else {
           expect(zoom.lengths.length).toBeGreaterThan(0);
           for (const ms of zoom.lengths) expect(ms).toBeLessThanOrEqual(MOTION_MS);
-          expect(zoom.frames).toBeGreaterThan(3);
+          expect(zoom.moved).toBeGreaterThan(0);
+          expect(zoom.span).toBeGreaterThan(100);
           expect(zoom.span).toBeLessThanOrEqual(MOTION_MS + FRAME_SLACK_MS);
         }
       });
@@ -520,12 +568,32 @@ test.describe('Accessibility (PRD section 6) in the pop-up', () => {
       names.add(f.name);
     }
     expect(names.has('Close')).toBe(true);
+    // And backwards with Shift-Tab, round the same buttons.
+    const back = new Set();
+    for (let i = 0; i < 8; i++) {
+      await page.keyboard.press(`Shift+${tabKey(browserName)}`);
+      const f = await page.evaluate(() => ({ inside: !!document.activeElement.closest('.pswp'), tag: document.activeElement.tagName, name: document.activeElement.getAttribute('aria-label') }));
+      expect(f.inside, `Shift-Tab ${i + 1} left the pop-up`).toBe(true);
+      expect(f.tag).toBe('BUTTON');
+      back.add(f.name);
+    }
+    expect(back).toEqual(names);
     await page.keyboard.press('Escape');
     await waitClosed(page);
     expect(await page.evaluate(() => document.activeElement.dataset.date)).toBe(date);
     expect(await page.evaluate(() => window.scrollY)).toBe(y);
     const ring = await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle);
     expect(ring).not.toBe('none');
+  });
+
+  test('opened with a click, Tab and Shift-Tab also go to the pop-up\'s buttons, not the page behind it', async ({ page, browserName }) => {
+    await page.goto(`/${newest}/`);
+    await tileFor(page, byYear.get(newest)[0]).click();
+    await waitOpen(page);
+    for (const key of [tabKey(browserName), `Shift+${tabKey(browserName)}`]) {
+      await page.keyboard.press(key);
+      expect(await page.evaluate(() => document.activeElement.closest('.pswp') !== null && document.activeElement.tagName), key).toBe('BUTTON');
+    }
   });
 
   test('a drawing opened with Enter and moved on with the arrow keys gives the focus back to the drawing shown, without moving the page', async ({ page }) => {
@@ -535,11 +603,13 @@ test.describe('Accessibility (PRD section 6) in the pop-up', () => {
     const y = await page.evaluate(() => window.scrollY);
     await page.keyboard.press('Enter');
     await waitOpen(page);
-    await page.keyboard.press('ArrowRight');
+    // On to the year's last drawing, whose tile is far below the screen.
+    for (let i = 1; i < dates.length; i++) await page.keyboard.press('ArrowRight');
     await waitOpen(page);
+    expect(await page.evaluate((code) => eval(code).getAttribute('src'), shownImage)).toBe(`/full/${biggest}/${dates.at(-1)}.jpg`);
     await page.keyboard.press('Escape');
     await waitClosed(page);
-    expect(await page.evaluate(() => document.activeElement.dataset.date)).toBe(dates[1]);
+    expect(await page.evaluate(() => document.activeElement.dataset.date)).toBe(dates.at(-1));
     expect(await page.evaluate(() => window.scrollY)).toBe(y);
   });
 
