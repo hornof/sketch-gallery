@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import fc from 'fast-check';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
-import { add, chooseDate, describeAdd, drawingLink } from '../commands/add.mjs';
+import { HELP, add, chooseDate, describeAdd, drawingLink } from '../commands/add.mjs';
 import { readDrawings } from '../build/drawings.mjs';
 import { JPEG_A, JPEG_B, JPEG_C, blobId, git, makeSandbox } from './sandbox.mjs';
 
@@ -164,7 +164,7 @@ describe('adding a drawing', () => {
     expect(sb.remoteFiles()['drawings/2026/2026-11-03.jpg']).toBe(blobId(JPEG_A));
   });
 
-  it.each(['n', '', 'no', 'yep', 'maybe'])('changes nothing on the answer %j', async (answer) => {
+  it.each(['n', '', 'no', 'yep', 'maybe', 'nay', 'yes please'])('changes nothing on the answer %j', async (answer) => {
     const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     const before = snapshot(sb);
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], { answer });
@@ -217,6 +217,7 @@ describe('a date that already has a drawing', () => {
     const replaced = await run(sb, [sb.sourceFile('photo.jpg', JPEG_C), '--date', '2026-11-03', '--replace']);
     expect(replaced.code).toBe(0);
     expect(replaced.questions).toEqual(['Replacing November 3, 2026 in 2026 (still 2 drawings). Go ahead? (y/n) ']);
+    expect(replaced.out).toContain('Replaced November 3, 2026. Live in about 2 minutes at:\nhttps://sketch-gallery.hornof.org/2026/#2026-11-03');
     expect(sb.remoteFiles()).toEqual({ ...afterAdd.remote, 'drawings/2026/2026-11-03.jpg': blobId(JPEG_C) });
     expect(git(sb.remote, 'log', '-1', '--format=%s', 'main')).toBe('Replace November 3, 2026');
     expect(sb.laptopHead()).toBe(sb.remoteHead());
@@ -342,7 +343,8 @@ describe('problems: says what is wrong and changes nothing', () => {
   it('unsent changes in the drawings folder', async () => {
     const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     writeFileSync(join(sb.laptop, 'drawings', '2026', '2026-03-01.jpg'), JPEG_A);
-    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'The drawings folder has changes that aren\'t on GitHub yet: drawings/2026/2026-03-01.jpg');
+    writeFileSync(join(sb.laptop, 'drawings', '2026', '2026-03-02.jpg'), JPEG_A);
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'The drawings folder has changes that aren\'t on GitHub yet: drawings/2026/2026-03-01.jpg, drawings/2026/2026-03-02.jpg');
   });
 
   it('GitHub can\'t be reached', async () => {
@@ -384,9 +386,18 @@ describe('when the push fails, everything is undone', () => {
   it('a new drawing: the commit and the copy are gone', async () => {
     const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     sb.refusePushes();
-    const { remote } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    const { r, remote } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.out).toContain('Couldn\'t send it to GitHub. Check the internet connection, then try ./add again.');
     expect(existsSync(join(sb.laptop, 'drawings', '2026', '2026-11-03.jpg'))).toBe(false);
     expect(sb.remoteFiles()).toEqual(remote);
+  });
+
+  it('a new year next to other years: only the new year folder is gone', async () => {
+    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    sb.refusePushes();
+    await failedPush(sb, [sb.sourceFile('2027-01-01.jpg', JPEG_A)]);
+    expect(existsSync(join(sb.laptop, 'drawings', '2027'))).toBe(false);
+    expect(existsSync(join(sb.laptop, 'drawings', '2026', '2026-02-28.jpg'))).toBe(true);
   });
 
   it('a new year: the new folder is gone too', async () => {
@@ -433,6 +444,36 @@ describe('when the push fails, everything is undone', () => {
     sb.refusePushes();
     await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
     expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my own edit\n');
+  });
+});
+
+describe('how ./add is run, before it looks at the repo', () => {
+  // These never reach git: a repo folder that doesn't exist would make git fail.
+  const runHere = (args) => run({ laptop: '/nonexistent-repo' }, args);
+
+  it('--help and -h print the help', async () => {
+    for (const flag of ['--help', '-h']) {
+      const r = await runHere([flag]);
+      expect(r.code).toBe(0);
+      expect(r.out).toBe(HELP);
+    }
+  });
+
+  it('no file, two files, or an unknown option is refused with how to use it', async () => {
+    const none = await runHere([]);
+    expect(none.code).toBe(1);
+    expect(none.out).toContain('Which drawing? For example: ./add 2026-11-03.jpg');
+    expect(none.out).toContain(HELP);
+    const two = await runHere(['a.jpg', 'b.jpg']);
+    expect(two.code).toBe(1);
+    expect(two.out).toBe('One drawing at a time: ./add was given 2 files (a.jpg, b.jpg).');
+    const unknown = await runHere(['a.jpg', '--force']);
+    expect(unknown.code).toBe(1);
+    expect(unknown.out).toContain('--force');
+    expect(unknown.out).toContain(HELP);
+    const noDate = await runHere(['a.jpg', '--date']);
+    expect(noDate.code).toBe(1);
+    expect(noDate.out).toContain('--date');
   });
 });
 
