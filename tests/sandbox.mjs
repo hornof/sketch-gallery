@@ -1,8 +1,9 @@
-// A throwaway copy of the setup ./add works in, all inside a temporary folder (#14):
+// A throwaway copy of the setup ./add and ./import work in, all inside a temporary folder (#14, #15):
 //   github.git  a bare repo standing in for GitHub, so nothing is ever sent to the real one
 //   laptop/     a clone of it, standing in for the owner's copy of the repo
-// Tests and `npm run try-add` use it. Nothing here touches the real repo.
+// Tests, `npm run try-add` and `npm run try-import` use it. Nothing here touches the real repo.
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -15,8 +16,14 @@ export const JPEG_A = readFileSync(join(FIXTURES, '2025', '2025-12-31.jpg'));
 export const JPEG_B = readFileSync(join(FIXTURES, '2026', '2026-02-28.jpg'));
 export const JPEG_C = readFileSync(join(FIXTURES, '2024', '2024-02-29.jpg'));
 
+// How long a test waits for one program it runs, so a stuck one fails its test instead of
+// hanging the whole test run (spawnSync blocks the test process, so vitest's own time limit
+// can't stop it).
+export const CHILD_TIMEOUT_MS = 60_000;
+
 export function git(cwd, ...args) {
-  const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  const r = spawnSync('git', args, { cwd, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
+  if (r.error) throw new Error(`git ${args.join(' ')} in ${cwd}: ${r.error.message}`);
   if (r.status !== 0) throw new Error(`git ${args.join(' ')} failed in ${cwd}:\n${r.stderr}`);
   return r.stdout.trimEnd();
 }
@@ -88,11 +95,23 @@ export function makeSandbox(files = {}) {
       writeFileSync(path, data);
       return path;
     },
+    // A folder outside the repo, for ./import to add. files: { '2025-10-07.jpg': <Buffer>, 'sub': null }
+    // (null makes a folder inside it). Returns the folder's path, which ends in `name`.
+    sourceFolder(name, files = {}) {
+      const dir = join(mkdtempSync(join(root, 'from-')), name);
+      mkdirSync(dir, { recursive: true });
+      for (const [rel, data] of Object.entries(files)) {
+        if (data === null) mkdirSync(join(dir, rel), { recursive: true });
+        else writeFileSync(join(dir, rel), data);
+      }
+      return dir;
+    },
   };
 }
 
-// The git id a file's contents would get, to compare with remoteFiles().
+// The git id a file's contents would get, to compare with remoteFiles(): the SHA-1 of
+// "blob <size>\0" followed by the contents, worked out here instead of by running git.
 export function blobId(data) {
-  const r = spawnSync('git', ['hash-object', '--stdin'], { input: data, encoding: 'utf8' });
-  return r.stdout.trim();
+  const bytes = Buffer.from(data);
+  return createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 }

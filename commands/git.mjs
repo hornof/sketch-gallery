@@ -1,21 +1,30 @@
 // Getting the latest version from GitHub and sending drawings to it, for the owner
-// commands (#14). Everything runs git in the repo folder, using the laptop's own
+// commands (#14, #15). Everything runs git in the repo folder, using the laptop's own
 // GitHub login.
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+// How long one git call may take before it is stopped and counts as failed. Sending all
+// the drawings at once can be slow, so it's long; tests make it short.
+export const limits = { gitMs: 10 * 60 * 1000 };
+
+const duration = (ms) => (ms >= 60_000 ? plural(Math.round(ms / 60_000), 'minute') : plural(Math.round(ms / 1000), 'second'));
+
 export function git(repo, ...args) {
-  const r = spawnSync('git', args, { cwd: repo, encoding: 'utf8' });
-  return { ok: r.status === 0, out: (r.stdout ?? '').trim(), err: (r.stderr ?? '').trim() };
+  const r = spawnSync('git', args, { cwd: repo, encoding: 'utf8', timeout: limits.gitMs });
+  let err = (r.stderr ?? '').trim();
+  if (r.error?.code === 'ETIMEDOUT') err = `${err} git ${args[0]} didn't finish within ${duration(limits.gitMs)}, so it was stopped`.trim();
+  return { ok: r.status === 0, out: (r.stdout ?? '').trim(), err };
 }
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // Checks that the repo is ready for a drawing to be added, and gets the latest
 // version from GitHub. Returns null when ready, or a message saying what's wrong
 // and how to fix it.
-export function getReady(repo) {
+export function getReady(repo, command = './add') {
   const branch = git(repo, 'branch', '--show-current');
   if (!branch.ok) return `${repo} isn't a copy of the repo (git says: ${branch.err})`;
   if (branch.out !== 'main') {
@@ -24,7 +33,7 @@ export function getReady(repo) {
     if (rebaseStopped(repo)) {
       return 'A git pull --rebase stopped partway because this laptop and GitHub changed the same lines. Go back with git rebase --abort, then get help from someone who knows git.';
     }
-    return `./add works on main, and this copy of the repo is on ${branch.out || 'no branch'}. Switch with: git switch main`;
+    return `${command} works on main, and this copy of the repo is on ${branch.out || 'no branch'}. Switch with: git switch main`;
   }
   const changed = git(repo, 'status', '--porcelain', '--untracked-files=all', '--', 'drawings');
   if (changed.out) {
@@ -76,7 +85,7 @@ function blockingFiles(said) {
 // Returns null when GitHub has them. If anything fails, it puts the repo back the
 // way it was (the commit, the copies, any replaced files, any new folders) and
 // returns a message saying what went wrong.
-export function sendToGitHub(repo, files, message) {
+export function sendToGitHub(repo, files, message, command = './add') {
   const before = git(repo, 'rev-parse', 'HEAD').out;
   // What each path held before, so it can be put back.
   const saved = files.map(({ to }) => {
@@ -115,10 +124,10 @@ export function sendToGitHub(repo, files, message) {
     undo();
     const moved = /fetch first|non-fast-forward/.test(push.err);
     const login = /Authentication failed|could not read Username|Permission to .* denied|\b403\b/.test(push.err);
-    let hint = 'Check the internet connection, then try ./add again.';
-    if (moved) hint = 'Someone changed GitHub in the meantime. Try ./add again.';
+    let hint = `Check the internet connection, then try ${command} again.`;
+    if (moved) hint = `Someone changed GitHub in the meantime. Try ${command} again.`;
     else if (login) hint = 'GitHub didn\'t accept this laptop\'s login. Sign in with gh auth login and try again.';
-    return `Couldn't send it to GitHub. ${hint} (git says: ${push.err})`;
+    return `Couldn't send to GitHub. ${hint} (git says: ${push.err})`;
   }
   return null;
 }
