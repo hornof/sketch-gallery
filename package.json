@@ -14,7 +14,9 @@
     "lighthouse": "npx --yes @lhci/cli@0.16.1 autorun",
     "serve": "node tests/serve.mjs dist 4173",
     "fixtures": "node tests/fixtures/make-fixtures.mjs",
-    "mutation": "stryker run"
+    "mutation": "stryker run",
+    "try-add": "node tests/try-add.mjs",
+    "try-import": "node tests/try-import.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

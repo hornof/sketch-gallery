@@ -9,12 +9,23 @@ Built with the apb process: https://github.com/hornof/apb
 You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stryker asks for Node 22.18 or later; on an older 22 it warns but runs. From the repo folder:
 
 - `npm install` installs the tools, once.
-- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `drawings/` exists, it uses the test drawings in `tests/fixtures/drawings/`. If a file breaks the rules, the build stops and lists every problem. `npm run build -- --drawings <folder>` builds from another folder laid out the same way. That folder must hold only year folders: to try the placeholder drawings, copy the six year folders of `../sketch-gallery-placeholders` into an empty folder first.
+- `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. Until `./import` first loads the drawings, there is no `drawings/` folder and the site has no drawings. `npm run build -- --drawings tests/fixtures/drawings` builds the test drawings instead. `--drawings <folder>` works with any folder laid out the same way. That folder must hold only year folders: to try the placeholder drawings, copy the six year folders of `../sketch-gallery-placeholders` into an empty folder first. If a file breaks the rules, the build stops and lists every problem.
 - `npm run serve` shows the built site at http://localhost:4173/, the way Cloudflare serves it. `dist/drawings.json` is the list of drawings.
+- `./add 2026-11-03.jpg` adds one drawing and sends it to GitHub; the site shows it about 2 minutes later. Run it on main. It gets the latest version from GitHub first, checks the file, says what it will do and asks for a yes. It changes nothing if anything is wrong, and undoes everything if sending to GitHub fails.
+  - `./add photo.jpg --date 2026-11-03` adds a file that isn't named by date, and gives it that name.
+  - `--replace` replaces the drawing already there for that date. Without it, `./add` refuses a date that already has a drawing.
+  - `--yes` doesn't ask before adding.
+  - `./add --help` lists these.
+- `./import ../my-drawings/2024 ../my-drawings/2025` adds one or more year folders in one commit and sends them to GitHub, so loading several years is one rebuild of the site. Each folder is named after its year and holds only drawings named by date. Run it on main. Like `./add`, it gets the latest version from GitHub first, checks every file, says what it will do and asks for a yes. It's all or nothing: if any file in any folder has a problem, it lists every problem and adds nothing.
+  - `--replace` replaces drawings already there for the same dates. Without it, `./import` refuses them.
+  - `--yes` doesn't ask before adding.
+  - `./import --help` lists these.
+- `npm run try-add` tries `./add` safely: it runs the real `./add` code on a throwaway copy of the repo in a temporary folder, with a stand-in for GitHub there too. `npm run try-add -- --date 2026-11-03` tries a date that already has a drawing; add `--replace` to replace it.
+- `npm run try-import` tries `./import` the same way, on two sample year folders. `npm run try-import -- --bad` adds two badly named files to them, to see every problem listed and nothing added. `npm run try-import -- <folder> <folder>` imports your own year folders into the throwaway copy, starting, like main today, with no drawings.
 - `npm test` runs the site's tests.
 - `npm run test:browser` runs the browser tests on the built site: Chromium, Firefox and WebKit at 375, 768 and 1440 px wide. The first time, `npx playwright install chromium firefox webkit` downloads the browsers. After building with `--drawings <folder>`, run `DRAWINGS=<folder> npm run test:browser` so the tests expect that folder's drawings.
 - `npm run lighthouse` runs Lighthouse, Google's page-speed check, on the built site, as a phone would see it, and fails below 90 for speed or accessibility. `node scripts/lighthouse-scores.mjs` prints the scores. It needs Chrome and Node 22.19 or later. Lighthouse runs through `npx` at a fixed version rather than from package.json, because listing it there adds 13 high-severity warnings to `npm audit`; keep it out of package.json.
-- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name and drawing code and checks that a test catches each one. It takes about a minute.
+- `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name, drawing, `./add` and `./import` code and checks that a test catches each one. It takes 10 to 30 minutes.
 - `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.
 
@@ -39,8 +50,14 @@ GitHub runs the build, the site's tests, the map script's tests, the browser tes
 | build/drawings.mjs | Reads the drawings folder, checks the file rules, makes the thumbnails, the full-size copies and the list of drawings | Claude |
 | build/dates.mjs | Turns a file name like `2025-10-07.jpg` into a date and back, and writes labels like "October 7" | Claude |
 | build/jpeg.mjs | Removes hidden notes, like the place a photo was taken, from the full-size copies, keeping only which way is up | Claude |
+| add | The `./add` command; its code is in `commands/add.mjs` | the human |
+| commands/add.mjs | What `./add` does: checks the file, asks, adds it | Claude |
+| import | The `./import` command; its code is in `commands/import.mjs` | the human |
+| commands/import.mjs | What `./import` does: checks every folder and file, asks, adds them all in one commit | Claude |
+| commands/git.mjs | Gets the latest version from GitHub, and sends drawings to it, undoing everything if that fails | Claude |
 | tests/ | The site's automatic tests, run by `npm test`; the browser tests in tests/browser/, run by `npm run test:browser`; and tests/serve.mjs, which serves `dist/` the way Cloudflare does | Claude |
-| tests/fixtures/ | Test drawings, used until the real ones are in `drawings/`, and `make-fixtures.mjs`, which makes them | Claude |
+| tests/sandbox.mjs, tests/try-add.mjs, tests/try-import.mjs | A throwaway copy of the repo with a stand-in for GitHub, used by the `./add` and `./import` tests and by `npm run try-add` and `npm run try-import` | Claude |
+| tests/fixtures/ | Test drawings, used by the tests, and `make-fixtures.mjs`, which makes them | Claude |
 | stryker.config.json | Settings for Stryker, run by `npm run mutation` | Claude |
 | .gitignore | Files git leaves out of the repo | Claude |
 | docs/HISTORY.md | The project's turning points: decisions, surprises, changes of mind. Start here to see why the project looks the way it does | anyone |

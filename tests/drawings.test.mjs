@@ -1,20 +1,33 @@
 // Drawings in, site data out (#13, TDD section 5 and item 2 of section 12).
 // The build reads a drawings folder, enforces the file rules, makes thumbnails
 // and full-size copies, and writes the list of drawings.
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import exifr from 'exifr';
 import fc from 'fast-check';
 import sharp from 'sharp';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, onTestFinished } from 'vitest';
 import { BuildStopped, MAX_THUMB_BYTES, THUMB_LONG_SIDE, buildDrawings, makeThumbnail, readDrawings } from '../build/drawings.mjs';
 import { PHONE_PHOTO } from './fixtures/make-fixtures.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, 'fixtures', 'drawings');
-const tmp = (name) => mkdtempSync(join(tmpdir(), `sketch-gallery-${name}-`));
+// A new temporary folder, removed when its test ends, pass or fail. One made in beforeAll,
+// outside any test, is removed when this file's tests end.
+const remove = (dir) => rmSync(dir, { recursive: true, force: true });
+const madeOutsideTests = [];
+const tmp = (name) => {
+  const dir = mkdtempSync(join(tmpdir(), `sketch-gallery-${name}-`));
+  try {
+    onTestFinished(() => remove(dir));
+  } catch {
+    madeOutsideTests.push(dir); // vitest refuses onTestFinished outside a test
+  }
+  return dir;
+};
+afterAll(() => madeOutsideTests.forEach(remove));
 
 // Every file under a folder, as paths relative to it, leaving out hidden files like .DS_Store.
 function filesUnder(dir, prefix = '') {
@@ -340,5 +353,32 @@ describe('the list and the files always match', () => {
     await buildDrawings({ from, to: tmp('out') });
     expect(filesUnder(from)).toEqual(before);
     expect(readFileSync(join(from, '2025/2025-01-01.jpg')).equals(jpeg)).toBe(true);
+  });
+});
+
+describe('a drawings folder that does not exist (#15)', () => {
+  it('stops the build', async () => {
+    const from = join(tmp('none'), 'drawings');
+    const to = join(tmp('out'), 'dist');
+    const err = await buildDrawings({ from, to }).catch((e) => e);
+    expect(err).toBeInstanceOf(BuildStopped);
+    expect(err.problems).toEqual([`the drawings folder ${from} doesn't exist`]);
+    expect(existsSync(to)).toBe(false);
+  });
+
+  it('with allowMissing, writes an empty list and clears out an earlier build\'s files', async () => {
+    const to = tmp('out');
+    await buildDrawings({ from: makeFolder({ '2025/2025-01-01.jpg': 'jpeg' }), to });
+    const list = await buildDrawings({ from: join(tmp('none'), 'drawings'), to, allowMissing: true });
+    expect(list).toEqual([]);
+    expect(JSON.parse(readFileSync(join(to, 'drawings.json'), 'utf8'))).toEqual({ drawings: [] });
+    expect(filesUnder(to)).toEqual(['drawings.json']);
+  });
+
+  it('allowMissing changes nothing when the folder exists', async () => {
+    const from = makeFolder({ '2025/2025-01-01.jpg': 'jpeg', '2025/photo.jpg': 'jpeg' });
+    const err = await buildDrawings({ from, to: tmp('out'), allowMissing: true }).catch((e) => e);
+    expect(err).toBeInstanceOf(BuildStopped);
+    expect(err.problems).toEqual(['2025/photo.jpg: "photo.jpg" isn\'t named like 2025-10-07.jpg (year-month-day.jpg)']);
   });
 });

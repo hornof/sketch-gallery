@@ -4,7 +4,7 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** Build. In review: [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid), which waits for [#15](https://github.com/hornof/sketch-gallery/issues/15). Next: [#14](https://github.com/hornof/sketch-gallery/issues/14) (`./add`), then [#15](https://github.com/hornof/sketch-gallery/issues/15) (`./import`).
+**Now:** Build. [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid), on the real drawings. Next: [#17](https://github.com/hornof/sketch-gallery/issues/17) (switching years in place)
 
 ```mermaid
 flowchart LR
@@ -35,10 +35,14 @@ flowchart LR
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests; the browser tests and Lighthouse run beside them | Every PR, every push to main |
 | [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`; then the home page and one page per year, made by `build/pages.mjs` | Every build |
+| [add](../add) | The `./add` command: adds one drawing and sends it to GitHub. Its code is in [commands/](../commands/). `./add --help` says how to use it. | Each time the human adds a drawing |
+| [import](../import) | The `./import` command: adds one or more year folders in one commit and sends them to GitHub, all or nothing. Its code is in [commands/](../commands/). `./import --help` says how to use it. | Loading the real drawings once, then any past year |
 | [tests/](../tests/) | The site's automatic tests, run by `npm test`, and the browser tests in `tests/browser/`, run by `npm run test:browser` in Chromium, Firefox and WebKit at 375, 768 and 1440 px | Every PR, every push to main |
 | [playwright.config.mjs](../playwright.config.mjs), [lighthouserc.json](../lighthouserc.json) | Settings for the browser tests, and for Lighthouse (Google's page-speed check, which must score at least 90 on a phone), and [scripts/lighthouse-scores.mjs](../scripts/lighthouse-scores.mjs), which prints the Lighthouse scores | Every PR, every push to main |
-| [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The build uses them until `drawings/` exists. | Every PR, until the real drawings are loaded |
-| [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name and drawing code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
+| [tests/try-add.mjs](../tests/try-add.mjs) | `npm run try-add`: runs `./add` on a throwaway copy of the repo with a stand-in for GitHub, made by `tests/sandbox.mjs`, which the `./add` and `./import` tests use too | To try `./add` without changing anything |
+| [tests/try-import.mjs](../tests/try-import.mjs) | `npm run try-import`: runs `./import` the same way, on two sample year folders or on folders you name | To try `./import` without changing anything |
+| [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The tests build them with `--drawings tests/fixtures/drawings`. | Every PR |
+| [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name, drawing, `./add` and `./import` code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 
 ## Claude artifacts

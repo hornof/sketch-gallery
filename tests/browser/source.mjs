@@ -7,17 +7,17 @@ import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// The same folder the build reads: drawings/, or the test drawings until it exists.
+// The same folder the build reads: drawings/, with no fallback (#15).
 // After `npm run build -- --drawings <dir>`, set DRAWINGS=<dir> to test that build.
 export function sourceFolder() {
-  if (process.env.DRAWINGS) return process.env.DRAWINGS;
-  const real = join(root, 'drawings');
-  return existsSync(real) ? real : join(root, 'tests', 'fixtures', 'drawings');
+  return process.env.DRAWINGS || join(root, 'drawings');
 }
 
-// Map of year (number) → that year's dates ("2025-10-07"), in date order.
+// Map of year (number) → that year's dates ("2025-10-07"), in date order; empty if
+// there's no folder yet.
 export function drawingsByYear(dir = sourceFolder()) {
   const byYear = new Map();
+  if (!existsSync(dir)) return byYear;
   for (const year of readdirSync(dir).filter((n) => /^\d{4}$/.test(n))) {
     const dates = readdirSync(join(dir, year))
       .filter((f) => f.endsWith('.jpg'))
