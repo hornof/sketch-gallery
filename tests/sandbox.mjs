@@ -18,7 +18,7 @@ export const JPEG_C = readFileSync(join(FIXTURES, '2024', '2024-02-29.jpg'));
 export function git(cwd, ...args) {
   const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`git ${args.join(' ')} failed in ${cwd}:\n${r.stderr}`);
-  return r.stdout.trim();
+  return r.stdout.trimEnd();
 }
 
 const IDENTITY = [['user.name', 'Sandbox'], ['user.email', 'sandbox@example.invalid'], ['commit.gpgsign', 'false']];

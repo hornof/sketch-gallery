@@ -6,6 +6,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fc from 'fast-check';
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { add, chooseDate, describeAdd, drawingLink } from '../commands/add.mjs';
 import { readDrawings } from '../build/drawings.mjs';
@@ -321,6 +322,23 @@ describe('problems: says what is wrong and changes nothing', () => {
     await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 1 commit that isn\'t on GitHub yet. Send it with git push, or remove it, then try again.');
   });
 
+  it('two commits on main that are not on GitHub yet', async () => {
+    const sb = makeSandbox();
+    for (const n of [1, 2]) {
+      writeFileSync(join(sb.laptop, `notes-${n}.txt`), 'mine\n');
+      git(sb.laptop, 'add', '-A');
+      git(sb.laptop, 'commit', '-q', '-m', `Mine ${n}`);
+    }
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 2 commits that aren\'t on GitHub yet. Send them with git push, or remove them, then try again.');
+  });
+
+  it('a drawing too detailed for a 60 KB thumbnail', async () => {
+    const sb = makeSandbox();
+    const noise = await sharp({ create: { width: 1000, height: 1000, channels: 3, noise: { type: 'gaussian', mean: 128, sigma: 120 } } })
+      .jpeg({ quality: 95 }).toBuffer();
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', noise)], '2026-11-03.jpg is too detailed for a thumbnail of at most 60 KB');
+  });
+
   it('unsent changes in the drawings folder', async () => {
     const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     writeFileSync(join(sb.laptop, 'drawings', '2026', '2026-03-01.jpg'), JPEG_A);
@@ -396,6 +414,17 @@ describe('when the push fails, everything is undone', () => {
     expect(Object.keys(sb.remoteFiles()).filter((p) => p.startsWith('drawings/')).sort()).toEqual([
       'drawings/2026/2026-02-28.jpg', 'drawings/2026/2026-03-01.jpg', 'drawings/2026/2026-11-03.jpg',
     ]);
+  });
+
+  it('git refuses the commit: the copy is gone, and GitHub is never asked', async () => {
+    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    writeFileSync(join(sb.laptop, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\necho "no commits today" >&2\nexit 1\n', { mode: 0o755 });
+    const before = snapshot(sb);
+    const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('Couldn\'t save it with git. (git says: no commits today)');
+    expect(r.out).toContain('Nothing changed.');
+    expect(snapshot(sb)).toEqual(before);
   });
 
   it('the owner\'s other work is still there', async () => {

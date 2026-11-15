@@ -1,0 +1,100 @@
+// Getting the latest version from GitHub and sending drawings to it, for the owner
+// commands (#14). Everything runs git in the repo folder, using the laptop's own
+// GitHub login.
+import { spawnSync } from 'node:child_process';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+
+export function git(repo, ...args) {
+  const r = spawnSync('git', args, { cwd: repo, encoding: 'utf8' });
+  return { ok: r.status === 0, out: (r.stdout ?? '').trim(), err: (r.stderr ?? '').trim() };
+}
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+// Checks that the repo is ready for a drawing to be added, and gets the latest
+// version from GitHub. Returns null when ready, or a message saying what's wrong
+// and how to fix it.
+export function getReady(repo) {
+  const branch = git(repo, 'branch', '--show-current');
+  if (!branch.ok) return `${repo} isn't a copy of the repo (git says: ${branch.err})`;
+  if (branch.out !== 'main') {
+    return `./add works on main, and this copy of the repo is on ${branch.out || 'no branch'}. Switch with: git switch main`;
+  }
+  const changed = git(repo, 'status', '--porcelain', '--untracked-files=all', '--', 'drawings');
+  if (changed.out) {
+    const files = changed.out.split('\n').map((line) => line.slice(3));
+    return `The drawings folder has changes that aren't on GitHub yet: ${files.join(', ')}. Send them with git, or remove them, then try again.`;
+  }
+  const pull = git(repo, 'pull', '-q', '--ff-only', 'origin', 'main');
+  if (!pull.ok) {
+    return `Couldn't get the latest version from GitHub. Check the internet connection and try again. (git says: ${pull.err})`;
+  }
+  const ahead = Number(git(repo, 'rev-list', '--count', 'origin/main..HEAD').out);
+  if (ahead > 0) {
+    return `main has ${plural(ahead, 'commit')} that ${ahead === 1 ? 'isn\'t' : 'aren\'t'} on GitHub yet. Send ${ahead === 1 ? 'it' : 'them'} with git push, or remove ${ahead === 1 ? 'it' : 'them'}, then try again.`;
+  }
+  return null;
+}
+
+// Copies each file into the repo, commits only those files and pushes to GitHub.
+// files: [{ from: '/path/on/laptop.jpg', to: 'drawings/2026/2026-11-03.jpg' }].
+// Returns null when GitHub has them. If anything fails, it puts the repo back the
+// way it was (the commit, the copies, any replaced files, any new folders) and
+// returns a message saying what went wrong.
+export function sendToGitHub(repo, files, message) {
+  const before = git(repo, 'rev-parse', 'HEAD').out;
+  // What each path held before, so it can be put back.
+  const saved = files.map(({ to }) => {
+    const path = join(repo, to);
+    return { to, path, old: existsSync(path) ? readFileSync(path) : null, newFolder: firstMissingFolder(repo, to) };
+  });
+
+  const undo = () => {
+    if (git(repo, 'rev-parse', 'HEAD').out !== before) git(repo, 'reset', '-q', '--soft', before);
+    for (const { to, path, old, newFolder } of saved) {
+      git(repo, 'reset', '-q', '--', to);
+      if (old) writeFileSync(path, old);
+      else rmSync(path, { force: true });
+      if (newFolder) rmSync(join(repo, newFolder), { recursive: true, force: true });
+    }
+  };
+
+  for (const { from, to } of files) {
+    mkdirSync(dirname(join(repo, to)), { recursive: true });
+    copyFileSync(from, join(repo, to));
+  }
+  const paths = files.map((f) => f.to);
+  const steps = [
+    ['add', '--', ...paths],
+    ['commit', '-q', '-m', message, '--', ...paths],
+  ];
+  for (const step of steps) {
+    const r = git(repo, ...step);
+    if (!r.ok) {
+      undo();
+      return `Couldn't save it with git. (git says: ${r.err || r.out})`;
+    }
+  }
+  const push = git(repo, 'push', '-q', 'origin', 'main');
+  if (!push.ok) {
+    undo();
+    const moved = /fetch first|non-fast-forward/.test(push.err);
+    const hint = moved
+      ? 'Someone changed GitHub in the meantime. Try ./add again.'
+      : 'Check the internet connection, then try ./add again.';
+    return `Couldn't send it to GitHub. ${hint} (git says: ${push.err})`;
+  }
+  return null;
+}
+
+// The outermost folder on the way to `to` that doesn't exist yet, or null: for
+// drawings/2027/2027-01-01.jpg in a repo with no drawings folder, 'drawings'.
+function firstMissingFolder(repo, to) {
+  const parts = to.split('/').slice(0, -1);
+  for (let i = 1; i <= parts.length; i++) {
+    const folder = parts.slice(0, i).join('/');
+    if (!existsSync(join(repo, folder))) return folder;
+  }
+  return null;
+}
