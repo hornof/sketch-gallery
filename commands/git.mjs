@@ -49,10 +49,9 @@ export function getReady(repo) {
 }
 
 // The files git names when the laptop's own changes stop it taking GitHub's
-// version: each is on its own line, starting with a tab, after "would be overwritten".
+// version ("would be overwritten by merge"): each on its own line, starting with a tab.
 function blockingFiles(said) {
-  if (!said.includes('would be overwritten')) return [];
-  return said.split('\n').filter((line) => line.startsWith('\t')).map((line) => line.trim()).sort();
+  return said.split('\n').filter((line) => line.startsWith('\t')).map((line) => line.trim());
 }
 
 // Copies each file into the repo, commits only those files and pushes to GitHub.

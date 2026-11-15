@@ -394,6 +394,7 @@ describe('problems: says what is wrong and changes nothing', () => {
     sb.pushFromElsewhere('README.md', 'theirs\n');
     writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
     const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md has changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+    expect(r.out.split('\n')[0]).toBe('README.md has changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
     expect(r.out).not.toContain('internet');
     expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my own edit\n');
   });
@@ -415,7 +416,26 @@ describe('problems: says what is wrong and changes nothing', () => {
     writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
     writeFileSync(join(sb.laptop, 'notes.txt'), 'my own notes\n');
     const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md and notes.txt have changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+    expect(r.out.split('\n')[0]).toBe('README.md and notes.txt have changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
     expect(r.out).not.toContain('internet');
+  });
+
+  it('three such files', async () => {
+    const sb = sandbox({ 'a.txt': 'start\n', 'b.txt': 'start\n', 'c.txt': 'start\n' });
+    for (const name of ['a.txt', 'b.txt', 'c.txt']) sb.pushFromElsewhere(name, 'theirs\n');
+    for (const name of ['a.txt', 'b.txt', 'c.txt']) writeFileSync(join(sb.laptop, name), 'mine\n');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'a.txt, b.txt and c.txt have changes');
+    expect(r.out.split('\n')[0]).toBe('a.txt, b.txt and c.txt have changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+  });
+
+  it('a folder that isn\'t a copy of the repo', async () => {
+    const sb = sandbox();
+    // The sandbox's own folder holds copies of the repo but isn't one.
+    const r = await run({ laptop: sb.root }, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.code).toBe(1);
+    expect(r.questions).toEqual([]);
+    expect(r.out).toContain(`${sb.root} isn't a copy of the repo (git says: `);
+    expect(r.out).toContain('Nothing changed.');
   });
 });
 
