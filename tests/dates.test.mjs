@@ -116,17 +116,15 @@ describe('fileName', () => {
   });
 
   it('turns an accepted file name into a date and back into the same name', () => {
+    // Names built from real dates, so every run checks the round trip.
+    const acceptedName = anyDay.map((d) => `${pad(d.year, 4)}-${pad(d.month, 2)}-${pad(d.day, 2)}.jpg`);
     fc.assert(
-      fc.property(anyName, (name) => {
+      fc.property(acceptedName, (name) => {
         const result = parseFileName(name);
-        if (result.ok) expect(fileName(result)).toBe(name);
+        expect(result.ok).toBe(true);
+        expect(fileName(result)).toBe(name);
       }),
-    );
-    fc.assert(
-      fc.property(anyDay, (d) => {
-        const name = `${pad(d.year, 4)}-${pad(d.month, 2)}-${pad(d.day, 2)}.jpg`;
-        expect(fileName(parseFileName(name))).toBe(name);
-      }),
+      { numRuns: 2000 },
     );
   });
 

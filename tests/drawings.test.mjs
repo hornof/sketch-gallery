@@ -78,7 +78,8 @@ describe('building the test drawings', () => {
     }
   });
 
-  it("keeps each thumbnail the drawing's shape, at most the set size on its long side", async () => {
+  it("keeps each thumbnail the drawing's shape, at most 500 pixels on its long side", async () => {
+    expect(THUMB_LONG_SIDE).toBe(500);
     for (const d of list.drawings) {
       const { width, height } = await sharp(join(out, d.thumb)).metadata();
       expect(Math.max(width, height)).toBe(Math.min(THUMB_LONG_SIDE, Math.max(d.width, d.height)));
@@ -218,6 +219,21 @@ describe('the build stops', () => {
       "2025/2025-01-03.jpg: isn't really a JPEG",
       "2025/2025-01-04.jpg: isn't really a JPEG",
     ]);
+  });
+
+  it("for a JPEG whose picture data is cut short but still ends properly, which only making the thumbnail finds", async () => {
+    // Cut 2,000 bytes into the picture data, then add the end mark (FF D9), so every block still reads as whole.
+    const whole = readFileSync(join(fixtures, '2025', '2025-10-07.jpg'));
+    const startOfScan = whole.indexOf(Buffer.from([0xff, 0xda]));
+    const pictureData = startOfScan + 2 + whole.readUInt16BE(startOfScan + 2);
+    expect(pictureData + 2000).toBeLessThan(whole.length - 2);
+    const cutShort = Buffer.concat([whole.subarray(0, pictureData + 2000), Buffer.from([0xff, 0xd9])]);
+    const from = makeFolder({ '2025/2025-10-07.jpg': cutShort, '2025/2025-10-08.jpg': 'jpeg' });
+    const to = join(tmp('out'), 'dist');
+    const err = await buildDrawings({ from, to }).catch((e) => e);
+    expect(err).toBeInstanceOf(BuildStopped);
+    expect(err.problems).toEqual(["2025/2025-10-07.jpg: isn't really a JPEG"]);
+    expect(existsSync(to)).toBe(false);
   });
 
   it('for an empty year folder, so a year with no drawings never reaches the menu', async () => {
