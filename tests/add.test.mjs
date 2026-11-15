@@ -385,16 +385,70 @@ describe('problems: says what is wrong and changes nothing', () => {
     git(sb.laptop, 'add', 'notes.txt');
     git(sb.laptop, 'commit', '-q', '-m', 'Mine');
     sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_A);
-    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 1 commit that isn\'t on GitHub yet. Send it with git push, or remove it, then try again.');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 1 commit that isn\'t on GitHub yet, and GitHub has changed too. Get its changes first with git pull --rebase, then send yours with git push, and try again.');
     expect(r.out).not.toContain('internet');
+  });
+
+  it('two commits on main and GitHub has changed too', async () => {
+    const sb = sandbox();
+    for (const n of [1, 2]) {
+      writeFileSync(join(sb.laptop, `notes-${n}.txt`), 'mine\n');
+      git(sb.laptop, 'add', '-A');
+      git(sb.laptop, 'commit', '-q', '-m', `Mine ${n}`);
+    }
+    sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_A);
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 2 commits that aren\'t on GitHub yet, and GitHub has changed too. Get its changes first with git pull --rebase, then send yours with git push, and try again.');
+  });
+
+  // Following each message's advice must lead to a working ./add, not to a refused push.
+  it('following the advice for a commit on main, ./add then works', async () => {
+    const sb = sandbox();
+    writeFileSync(join(sb.laptop, 'notes.txt'), 'mine\n');
+    git(sb.laptop, 'add', 'notes.txt');
+    git(sb.laptop, 'commit', '-q', '-m', 'Mine');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Send it with git push');
+    git(sb.laptop, 'push', '-q', 'origin', 'main');
+    const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.code).toBe(0);
+    expect(sb.remoteFiles()['drawings/2026/2026-11-03.jpg']).toBe(blobId(JPEG_A));
+  });
+
+  it('following the advice for a commit on main when GitHub has changed too, ./add then works', async () => {
+    const sb = sandbox();
+    sb.pushFromElsewhere('README.md', 'theirs\n');
+    writeFileSync(join(sb.laptop, 'notes.txt'), 'mine\n');
+    git(sb.laptop, 'add', 'notes.txt');
+    git(sb.laptop, 'commit', '-q', '-m', 'Mine');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Get its changes first with git pull --rebase, then send yours with git push');
+    git(sb.laptop, 'pull', '-q', '--rebase');
+    git(sb.laptop, 'push', '-q');
+    const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.code).toBe(0);
+    const remote = sb.remoteFiles();
+    expect(remote['drawings/2026/2026-11-03.jpg']).toBe(blobId(JPEG_A));
+    expect(remote['notes.txt']).toBe(blobId('mine\n'));
+    expect(remote['README.md']).toBe(blobId('theirs\n'));
+  });
+
+  it('following the advice for an edit to a file GitHub also changed, ./add then works', async () => {
+    const sb = sandbox();
+    sb.pushFromElsewhere('README.md', 'theirs\n');
+    writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Copy them somewhere else and undo them');
+    writeFileSync(join(sb.root, 'README-copy.md'), readFileSync(join(sb.laptop, 'README.md')));
+    git(sb.laptop, 'checkout', '--', 'README.md');
+    const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.code).toBe(0);
+    expect(sb.remoteFiles()['drawings/2026/2026-11-03.jpg']).toBe(blobId(JPEG_A));
+    expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('theirs\n');
   });
 
   it('an unsaved edit to a file GitHub also changed: names the file, not the internet', async () => {
     const sb = sandbox();
     sb.pushFromElsewhere('README.md', 'theirs\n');
     writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
-    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md has changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
-    expect(r.out.split('\n')[0]).toBe('README.md has changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md has changes on this laptop that GitHub also changed. Copy them somewhere else and undo them, then try again.');
+    expect(r.out.split('\n')[0]).toBe('README.md has changes on this laptop that GitHub also changed. Copy them somewhere else and undo them, then try again.');
     expect(r.out).not.toContain('internet');
     expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my own edit\n');
   });
@@ -415,8 +469,8 @@ describe('problems: says what is wrong and changes nothing', () => {
     sb.pushFromElsewhere('notes.txt', 'theirs\n');
     writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
     writeFileSync(join(sb.laptop, 'notes.txt'), 'my own notes\n');
-    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md and notes.txt have changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
-    expect(r.out.split('\n')[0]).toBe('README.md and notes.txt have changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md and notes.txt have changes on this laptop that GitHub also changed. Copy them somewhere else and undo them, then try again.');
+    expect(r.out.split('\n')[0]).toBe('README.md and notes.txt have changes on this laptop that GitHub also changed. Copy them somewhere else and undo them, then try again.');
     expect(r.out).not.toContain('internet');
   });
 
@@ -425,7 +479,7 @@ describe('problems: says what is wrong and changes nothing', () => {
     for (const name of ['a.txt', 'b.txt', 'c.txt']) sb.pushFromElsewhere(name, 'theirs\n');
     for (const name of ['a.txt', 'b.txt', 'c.txt']) writeFileSync(join(sb.laptop, name), 'mine\n');
     const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'a.txt, b.txt and c.txt have changes');
-    expect(r.out.split('\n')[0]).toBe('a.txt, b.txt and c.txt have changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+    expect(r.out.split('\n')[0]).toBe('a.txt, b.txt and c.txt have changes on this laptop that GitHub also changed. Copy them somewhere else and undo them, then try again.');
   });
 
   it('a folder that isn\'t a copy of the repo', async () => {
