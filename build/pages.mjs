@@ -101,7 +101,7 @@ ${CSS}</style>
 </header>
 <nav aria-label="Years"><ul>${menu}</ul></nav>
 <main>
-<h2 class="count">${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}</h2>
+<h2 class="count">${year === undefined ? 'No drawings yet.' : `${year} · ${n} ${n === 1 ? 'drawing' : 'drawings'}`}</h2>
 <ul class="grid">
 ${mine.map(tile).join('\n')}
 </ul>
@@ -113,8 +113,10 @@ ${mine.map(tile).join('\n')}
 }
 
 // Writes /index.html (the newest year), /YYYY/index.html for every year, and the fonts.
+// With no drawings (before ./import first creates drawings/), only a home page that says so.
 export function writeSite({ list, to }) {
   const years = yearsOf(list);
+  mkdirSync(to, { recursive: true });
   // Clear out year pages from an earlier build, so a removed year leaves nothing behind.
   for (const name of existsSync(to) ? readdirSync(to) : []) {
     if (/^\d{4}$/.test(name)) rmSync(join(to, name), { recursive: true, force: true });
