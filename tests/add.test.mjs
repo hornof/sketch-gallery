@@ -9,6 +9,7 @@ import fc from 'fast-check';
 import sharp from 'sharp';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { HELP, add, chooseDate, describeAdd, drawingLink } from '../commands/add.mjs';
+import { git as gitRun } from '../commands/git.mjs';
 import { readDrawings } from '../build/drawings.mjs';
 import { JPEG_A, JPEG_B, JPEG_C, blobId, git, makeSandbox } from './sandbox.mjs';
 
@@ -385,7 +386,7 @@ describe('problems: says what is wrong and changes nothing', () => {
     git(sb.laptop, 'add', 'notes.txt');
     git(sb.laptop, 'commit', '-q', '-m', 'Mine');
     sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_A);
-    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 1 commit that isn\'t on GitHub yet, and GitHub has changed too. Get its changes first with git pull --rebase, then send yours with git push, and try again.');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 1 commit that isn\'t on GitHub yet, and GitHub has changed too. Get its changes first with git pull --rebase --autostash, then send yours with git push, and try again.');
     expect(r.out).not.toContain('internet');
   });
 
@@ -397,7 +398,7 @@ describe('problems: says what is wrong and changes nothing', () => {
       git(sb.laptop, 'commit', '-q', '-m', `Mine ${n}`);
     }
     sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_A);
-    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 2 commits that aren\'t on GitHub yet, and GitHub has changed too. Get its changes first with git pull --rebase, then send yours with git push, and try again.');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 2 commits that aren\'t on GitHub yet, and GitHub has changed too. Get its changes first with git pull --rebase --autostash, then send yours with git push, and try again.');
   });
 
   // Following each message's advice must lead to a working ./add, not to a refused push.
@@ -419,15 +420,73 @@ describe('problems: says what is wrong and changes nothing', () => {
     writeFileSync(join(sb.laptop, 'notes.txt'), 'mine\n');
     git(sb.laptop, 'add', 'notes.txt');
     git(sb.laptop, 'commit', '-q', '-m', 'Mine');
-    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Get its changes first with git pull --rebase, then send yours with git push');
-    git(sb.laptop, 'pull', '-q', '--rebase');
-    git(sb.laptop, 'push', '-q');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Get its changes first with git pull --rebase --autostash, then send yours with git push');
+    expect(gitRun(sb.laptop, 'pull', '-q', '--rebase', '--autostash').ok).toBe(true);
+    expect(gitRun(sb.laptop, 'push', '-q').ok).toBe(true);
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
     expect(r.code).toBe(0);
     const remote = sb.remoteFiles();
     expect(remote['drawings/2026/2026-11-03.jpg']).toBe(blobId(JPEG_A));
     expect(remote['notes.txt']).toBe(blobId('mine\n'));
     expect(remote['README.md']).toBe(blobId('theirs\n'));
+  });
+
+  // ./add allows unsaved edits outside the drawings folder, so the pull advice must work with one.
+  it('following the advice for a commit on main when GitHub has changed too and a file outside drawings has an unsaved edit, ./add then works', async () => {
+    const sb = sandbox();
+    sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_B);
+    writeFileSync(join(sb.laptop, 'notes.txt'), 'mine\n');
+    git(sb.laptop, 'add', 'notes.txt');
+    git(sb.laptop, 'commit', '-q', '-m', 'Mine');
+    writeFileSync(join(sb.laptop, 'README.md'), 'my unsaved edit\n');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Get its changes first with git pull --rebase --autostash, then send yours with git push');
+    expect(gitRun(sb.laptop, 'pull', '-q', '--rebase', '--autostash').ok).toBe(true);
+    expect(gitRun(sb.laptop, 'push', '-q').ok).toBe(true);
+    expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my unsaved edit\n');
+    const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.code).toBe(0);
+    const remote = sb.remoteFiles();
+    expect(remote['drawings/2026/2026-11-03.jpg']).toBe(blobId(JPEG_A));
+    expect(remote['drawings/2026/2026-03-01.jpg']).toBe(blobId(JPEG_B));
+    expect(remote['notes.txt']).toBe(blobId('mine\n'));
+    expect(remote['README.md']).toBe(blobId('sandbox\n'));
+    expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my unsaved edit\n');
+  });
+
+  const STOPPED_PARTWAY = 'A git pull --rebase stopped partway because this laptop and GitHub changed the same lines. Go back with git rebase --abort, then get help from someone who knows git.';
+
+  // A laptop commit and GitHub changed the same lines: the pull stops partway, and
+  // ./add must say how to go back, not give advice git refuses.
+  it('a pull that stopped partway: says to go back with git rebase --abort, and going back works', async () => {
+    const sb = sandbox();
+    sb.pushFromElsewhere('README.md', 'theirs\n');
+    writeFileSync(join(sb.laptop, 'README.md'), 'mine\n');
+    git(sb.laptop, 'commit', '-q', '-am', 'Mine');
+    const mine = sb.laptopHead();
+    writeFileSync(join(sb.laptop, 'notes.txt'), 'unsaved\n');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'git pull --rebase --autostash');
+    const pull = gitRun(sb.laptop, 'pull', '-q', '--rebase', '--autostash');
+    expect(pull.ok).toBe(false);
+    expect(pull.err + pull.out).toContain('CONFLICT');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], STOPPED_PARTWAY);
+    expect(r.out.split('\n')[0]).toBe(STOPPED_PARTWAY);
+    expect(r.out).not.toContain('git switch main');
+    // Following the advice: back on main, with the laptop's commit and its unsaved file.
+    expect(gitRun(sb.laptop, 'rebase', '--abort').ok).toBe(true);
+    expect(git(sb.laptop, 'branch', '--show-current')).toBe('main');
+    expect(sb.laptopHead()).toBe(mine);
+    expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('mine\n');
+    expect(readFileSync(join(sb.laptop, 'notes.txt'), 'utf8')).toBe('unsaved\n');
+    // ./add no longer says the pull stopped partway.
+    const after = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'git pull --rebase --autostash');
+    expect(after.out).not.toContain('stopped partway');
+  });
+
+  it('a plain detached HEAD still says to switch to main, not that a pull stopped partway', async () => {
+    const sb = sandbox();
+    git(sb.laptop, 'switch', '-q', '--detach');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], './add works on main, and this copy of the repo is on no branch. Switch with: git switch main');
+    expect(r.out).not.toContain('stopped partway');
   });
 
   it('following the advice for an edit to a file GitHub also changed, ./add then works', async () => {
