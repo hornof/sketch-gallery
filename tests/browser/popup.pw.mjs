@@ -307,6 +307,42 @@ test.describe('R5 (pop-up)', () => {
     await waitClosed(page);
   });
 
+  test('closing on a drawing whose tile is off the screen keeps the drawing on the screen in every frame, and the page where it was', async ({ page }) => {
+    await page.goto(`/${biggest}/`);
+    const dates = byYear.get(biggest);
+    await tileFor(page, dates[0]).click();
+    await waitOpen(page);
+    // On to the year's last drawing, whose tile is far below the screen.
+    for (let i = 1; i < dates.length; i++) await page.keyboard.press('ArrowRight');
+    await waitOpen(page);
+    const last = dates.at(-1);
+    expect(await page.evaluate((code) => eval(code).getAttribute('src'), shownImage)).toBe(`/full/${biggest}/${last}.jpg`);
+    expect(await tileFor(page, last).evaluate((a) => a.getBoundingClientRect().top >= window.innerHeight)).toBe(true);
+    const y = await page.evaluate(() => window.scrollY);
+    // Every few milliseconds until the pop-up has gone, where the drawing is on the screen.
+    await page.evaluate((code) => {
+      const img = eval(code);
+      window.closeFrames = [];
+      window.closeDone = new Promise((resolve) => {
+        const step = () => {
+          if (!document.querySelector('.pswp')) return resolve();
+          const r = img.getBoundingClientRect();
+          window.closeFrames.push({ top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right) });
+          setTimeout(step, 4);
+        };
+        step();
+      });
+    }, shownImage);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.closeDone);
+    const frames = await page.evaluate(() => window.closeFrames);
+    const { width, height } = page.viewportSize();
+    expect(frames.length).toBeGreaterThan(5);
+    const off = frames.filter((f) => f.top < -2 || f.left < -2 || f.bottom > height + 2 || f.right > width + 2);
+    expect(off.length, `${off.length} of ${frames.length} frames have the drawing partly off the screen, the first at ${JSON.stringify(off[0])}`).toBe(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(y);
+  });
+
   for (const [way, close] of Object.entries(closeWays)) {
     test(`closing by ${way} shrinks the drawing back to its thumbnail and returns to the grid at the same place`, async ({ page, browserName }) => {
       await page.goto(`/${biggest}/`);
