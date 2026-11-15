@@ -3,7 +3,7 @@
 //   laptop/     a clone of it, standing in for the owner's copy of the repo
 // Tests and `npm run try-add` use it. Nothing here touches the real repo.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -72,9 +72,14 @@ export function makeSandbox(files = {}) {
       git(other, 'commit', '-q', '-m', `Add ${rel} elsewhere`);
       git(other, 'push', '-q', 'origin', 'main');
     },
-    // From now on the fake GitHub refuses every push.
-    refusePushes() {
-      writeFileSync(join(remote, 'hooks', 'pre-receive'), '#!/bin/sh\necho "refused by the test" >&2\nexit 1\n', { mode: 0o755 });
+    // From now on the fake GitHub refuses every push, and says `said` (git shows it after "remote:").
+    refusePushes(said = 'refused by the test') {
+      const quoted = `'${said.replaceAll('\'', '\'\\\'\'')}'`;
+      writeFileSync(join(remote, 'hooks', 'pre-receive'), `#!/bin/sh\necho ${quoted} >&2\nexit 1\n`, { mode: 0o755 });
+    },
+    // Deletes the whole temporary folder. Tests call it when they end; `npm run try-add` keeps its copy.
+    remove() {
+      rmSync(root, { recursive: true, force: true });
     },
     // A file outside the repo, for ./add to add.
     sourceFile(name, data) {

@@ -1,6 +1,7 @@
 // `npm run try-add`: try ./add safely (#14). Runs the real ./add code on a throwaway
 // copy of the repo in a temporary folder, with a stand-in for GitHub there too.
-// Nothing is sent to the real GitHub and the real repo isn't touched.
+// Nothing is sent to the real GitHub and the real repo isn't touched. Unlike the
+// tests, it keeps its temporary folder, so you can look inside.
 //   npm run try-add                                        ./add sample.jpg --date 2026-11-04
 //   npm run try-add -- --date 2026-11-03                   that date already has a drawing
 //   npm run try-add -- --date 2026-11-03 --replace         replaces it
@@ -12,7 +13,7 @@ const sb = makeSandbox({
   'drawings/2026/2026-11-03.jpg': JPEG_B,
 });
 const drawingsOnGitHub = () => Object.keys(sb.remoteFiles()).filter((p) => p.startsWith('drawings/')).join(', ');
-console.log(`Practice copy of the repo: ${sb.laptop}`);
+console.log(`Throwaway copy of the repo: ${sb.laptop}`);
 console.log(`Its stand-in for GitHub has: ${drawingsOnGitHub()}\n`);
 
 const sample = sb.sourceFile('sample.jpg', JPEG_A);

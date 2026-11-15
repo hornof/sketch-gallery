@@ -7,12 +7,19 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fc from 'fast-check';
 import sharp from 'sharp';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { HELP, add, chooseDate, describeAdd, drawingLink } from '../commands/add.mjs';
 import { readDrawings } from '../build/drawings.mjs';
 import { JPEG_A, JPEG_B, JPEG_C, blobId, git, makeSandbox } from './sandbox.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+// A sandbox that is removed when the test ends, pass or fail.
+function sandbox(files) {
+  const sb = makeSandbox(files);
+  onTestFinished(() => sb.remove());
+  return sb;
+}
 
 // Runs add() in a sandbox, collecting what it prints and every question it asks.
 async function run(sb, args, { answer = 'y', onAsk } = {}) {
@@ -118,7 +125,7 @@ describe('what ./add says', () => {
 
 describe('adding a drawing', () => {
   it('adds the file to its year, sends it to GitHub and prints the link', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B, 'drawings/2025/2025-12-31.jpg': JPEG_A });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B, 'drawings/2025/2025-12-31.jpg': JPEG_A });
     const before = sb.remoteFiles();
     const src = sb.sourceFile('2026-11-03.jpg', JPEG_C);
     const r = await run(sb, [src]);
@@ -133,7 +140,7 @@ describe('adding a drawing', () => {
   });
 
   it('--date gives a file not named by date its date', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     const before = sb.remoteFiles();
     const r = await run(sb, [sb.sourceFile('IMG_1234.jpeg', JPEG_C), '--date', '2026-11-03']);
     expect(r.code).toBe(0);
@@ -141,7 +148,7 @@ describe('adding a drawing', () => {
   });
 
   it('starts a new year, even before there is a drawings folder', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     const r = await run(sb, [sb.sourceFile('2027-01-01.jpg', JPEG_A)]);
     expect(r.code).toBe(0);
     expect(r.questions[0]).toContain('Adding January 1, 2027 to 2027, a new year (now 1 drawing)');
@@ -149,7 +156,7 @@ describe('adding a drawing', () => {
   });
 
   it('--yes skips the question', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A), '--yes']);
     expect(r.code).toBe(0);
     expect(r.questions).toEqual([]);
@@ -158,14 +165,14 @@ describe('adding a drawing', () => {
   });
 
   it.each(['y', 'Y', 'yes', ' YES '])('takes %j as a yes', async (answer) => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], { answer });
     expect(r.code).toBe(0);
     expect(sb.remoteFiles()['drawings/2026/2026-11-03.jpg']).toBe(blobId(JPEG_A));
   });
 
   it.each(['n', '', 'no', 'yep', 'maybe', 'nay', 'yes please'])('changes nothing on the answer %j', async (answer) => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     const before = snapshot(sb);
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], { answer });
     expect(r.code).toBe(0);
@@ -174,7 +181,7 @@ describe('adding a drawing', () => {
   });
 
   it('gets the latest version from GitHub first', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_A);
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_C)]);
     expect(r.code).toBe(0);
@@ -186,7 +193,7 @@ describe('adding a drawing', () => {
   });
 
   it('leaves the owner\'s other work alone, and sends only the drawing', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
     writeFileSync(join(sb.laptop, 'notes.txt'), 'staged\n');
     git(sb.laptop, 'add', 'notes.txt');
@@ -200,7 +207,7 @@ describe('adding a drawing', () => {
 
 describe('a date that already has a drawing', () => {
   it('is refused without --replace, replaced with it, and every other drawing stays the same', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B, 'drawings/2025/2025-12-31.jpg': JPEG_A });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B, 'drawings/2025/2025-12-31.jpg': JPEG_A });
     // First direction: add a new date.
     expect((await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)])).code).toBe(0);
     const afterAdd = snapshot(sb);
@@ -224,7 +231,7 @@ describe('a date that already has a drawing', () => {
   });
 
   it('--replace on a new date simply adds it', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A), '--replace']);
     expect(r.code).toBe(0);
     expect(r.questions[0]).toContain('Adding November 3, 2026 to 2026 (now 2 drawings)');
@@ -239,26 +246,31 @@ describe('random drawings', () => {
       fc.boolean(),
       async (existing, date, replace) => {
         const files = Object.fromEntries(existing.map((d) => [`drawings/${d.slice(0, 4)}/${d}.jpg`, JPEG_B]));
+        // Each run's sandbox is removed as soon as the run ends, not at the end of the test.
         const sb = makeSandbox(files);
-        const before = sb.remoteFiles();
-        const exists = existing.includes(date);
-        const r = await run(sb, [sb.sourceFile(`${date}.jpg`, JPEG_C), ...(replace ? ['--replace'] : [])]);
-        if (exists && !replace) {
-          expect(r.code).toBe(1);
-          expect(sb.remoteFiles()).toEqual(before);
-          return;
+        try {
+          const before = sb.remoteFiles();
+          const exists = existing.includes(date);
+          const r = await run(sb, [sb.sourceFile(`${date}.jpg`, JPEG_C), ...(replace ? ['--replace'] : [])]);
+          if (exists && !replace) {
+            expect(r.code).toBe(1);
+            expect(sb.remoteFiles()).toEqual(before);
+            return;
+          }
+          expect(r.code).toBe(0);
+          // Every other file is the same, and the new one is in its year's folder.
+          expect(sb.remoteFiles()).toEqual({ ...before, [`drawings/${date.slice(0, 4)}/${date}.jpg`]: blobId(JPEG_C) });
+          // The build reads the year in date order, with the new drawing in its place.
+          const checkout = join(sb.root, 'check');
+          git(sb.root, 'clone', '-q', sb.remote, checkout);
+          const { drawings, problems } = await readDrawings(join(checkout, 'drawings'));
+          expect(problems).toEqual([]);
+          const year = date.slice(0, 4);
+          const expected = [...new Set([...existing, date])].filter((d) => d.startsWith(year)).sort();
+          expect(drawings.filter((d) => String(d.year) === year).map((d) => d.date)).toEqual(expected);
+        } finally {
+          sb.remove();
         }
-        expect(r.code).toBe(0);
-        // Every other file is the same, and the new one is in its year's folder.
-        expect(sb.remoteFiles()).toEqual({ ...before, [`drawings/${date.slice(0, 4)}/${date}.jpg`]: blobId(JPEG_C) });
-        // The build reads the year in date order, with the new drawing in its place.
-        const checkout = join(sb.root, 'check');
-        git(sb.root, 'clone', '-q', sb.remote, checkout);
-        const { drawings, problems } = await readDrawings(join(checkout, 'drawings'));
-        expect(problems).toEqual([]);
-        const year = date.slice(0, 4);
-        const expected = [...new Set([...existing, date])].filter((d) => d.startsWith(year)).sort();
-        expect(drawings.filter((d) => String(d.year) === year).map((d) => d.date)).toEqual(expected);
       },
     ), { numRuns: 12 });
   }, 60_000);
@@ -277,22 +289,31 @@ describe('problems: says what is wrong and changes nothing', () => {
   }
 
   it('a file that does not exist', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     await refused(sb, [join(sb.root, '2026-11-03.jpg')], `Can't find ${join(sb.root, '2026-11-03.jpg')}`);
   });
 
   it('a folder instead of a file', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     await refused(sb, [sb.root, '--date', '2026-11-03'], `${sb.root} is a folder, not a drawing`);
   });
 
-  it('a file that is not really a JPEG', async () => {
-    const sb = makeSandbox();
-    await refused(sb, [sb.sourceFile('2026-11-03.jpg', 'not a picture')], '2026-11-03.jpg isn\'t really a JPEG');
+  const SAVE_AS_JPEG = 'Save it as a JPEG and try again (on a Mac: open it in Preview, then File > Export, Format: JPEG).';
+
+  it('a file that is not really a JPEG, and how to fix it', async () => {
+    const sb = sandbox();
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', 'not a picture')], `2026-11-03.jpg isn't really a JPEG. ${SAVE_AS_JPEG}`);
+  });
+
+  it('an iPhone photo saved as HEIC, and how to fix it', async () => {
+    const sb = sandbox();
+    // A HEIC file starts with an "ftyp" box naming the heic brand.
+    const heic = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypheic\0\0\0\0mif1heic'), Buffer.alloc(200)]);
+    await refused(sb, [sb.sourceFile('IMG_1234.HEIC', heic), '--date', '2026-11-03'], `IMG_1234.HEIC isn't really a JPEG. ${SAVE_AS_JPEG}`);
   });
 
   it('a JPEG damaged inside its picture data', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     const damaged = Buffer.from(JPEG_A);
     // Overwrite part of the picture data, after the headers, keeping the end marker.
     damaged.fill(0xff, Math.floor(damaged.length * 0.5), damaged.length - 2);
@@ -300,23 +321,23 @@ describe('problems: says what is wrong and changes nothing', () => {
   });
 
   it('a file not named by date, without --date', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     await refused(sb, [sb.sourceFile('IMG_1234.jpg', JPEG_A)], 'Rename it, or give the date: ./add IMG_1234.jpg --date 2026-11-03');
   });
 
   it('a --date that is not a real date', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     await refused(sb, [sb.sourceFile('photo.jpg', JPEG_A), '--date', '2026-13-01'], '--date 2026-13-01 isn\'t a real date');
   });
 
   it('not on main', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     git(sb.laptop, 'switch', '-q', '-c', 'my-branch');
     await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], './add works on main, and this copy of the repo is on my-branch. Switch with: git switch main');
   });
 
   it('commits on main that are not on GitHub yet', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     writeFileSync(join(sb.laptop, 'notes.txt'), 'mine\n');
     git(sb.laptop, 'add', 'notes.txt');
     git(sb.laptop, 'commit', '-q', '-m', 'Mine');
@@ -324,7 +345,7 @@ describe('problems: says what is wrong and changes nothing', () => {
   });
 
   it('two commits on main that are not on GitHub yet', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     for (const n of [1, 2]) {
       writeFileSync(join(sb.laptop, `notes-${n}.txt`), 'mine\n');
       git(sb.laptop, 'add', '-A');
@@ -334,21 +355,21 @@ describe('problems: says what is wrong and changes nothing', () => {
   });
 
   it('a drawing too detailed for a 60 KB thumbnail', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     const noise = await sharp({ create: { width: 1000, height: 1000, channels: 3, noise: { type: 'gaussian', mean: 128, sigma: 120 } } })
       .jpeg({ quality: 95 }).toBuffer();
-    await refused(sb, [sb.sourceFile('2026-11-03.jpg', noise)], '2026-11-03.jpg is too detailed for a thumbnail of at most 60 KB');
+    await refused(sb, [sb.sourceFile('2026-11-03.jpg', noise)], '2026-11-03.jpg is too detailed for a thumbnail of at most 60 KB, so the site would stop building with it. This needs a change to how the site makes thumbnails, not to the file: open an issue with the file attached.');
   });
 
   it('unsent changes in the drawings folder', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     writeFileSync(join(sb.laptop, 'drawings', '2026', '2026-03-01.jpg'), JPEG_A);
     writeFileSync(join(sb.laptop, 'drawings', '2026', '2026-03-02.jpg'), JPEG_A);
     await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'The drawings folder has changes that aren\'t on GitHub yet: drawings/2026/2026-03-01.jpg, drawings/2026/2026-03-02.jpg');
   });
 
   it('GitHub can\'t be reached', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     rmSync(sb.remote, { recursive: true, force: true });
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
     expect(r.code).toBe(1);
@@ -358,13 +379,33 @@ describe('problems: says what is wrong and changes nothing', () => {
     expect(sb.laptopStatus()).toBe('');
   });
 
-  it('the copy of main and GitHub\'s have gone different ways', async () => {
-    const sb = makeSandbox();
+  it('the copy of main and GitHub\'s have gone different ways: names the commit, not the internet', async () => {
+    const sb = sandbox();
     writeFileSync(join(sb.laptop, 'notes.txt'), 'mine\n');
     git(sb.laptop, 'add', 'notes.txt');
     git(sb.laptop, 'commit', '-q', '-m', 'Mine');
     sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_A);
-    await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'Couldn\'t get the latest version from GitHub');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'main has 1 commit that isn\'t on GitHub yet. Send it with git push, or remove it, then try again.');
+    expect(r.out).not.toContain('internet');
+  });
+
+  it('an unsaved edit to a file GitHub also changed: names the file, not the internet', async () => {
+    const sb = sandbox();
+    sb.pushFromElsewhere('README.md', 'theirs\n');
+    writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md has changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+    expect(r.out).not.toContain('internet');
+    expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my own edit\n');
+  });
+
+  it('two such files, one of them new on both sides', async () => {
+    const sb = sandbox();
+    sb.pushFromElsewhere('README.md', 'theirs\n');
+    sb.pushFromElsewhere('notes.txt', 'theirs\n');
+    writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
+    writeFileSync(join(sb.laptop, 'notes.txt'), 'my own notes\n');
+    const r = await refused(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], 'README.md and notes.txt have changes on this laptop that GitHub also changed. Save them with git, or undo them, then try again.');
+    expect(r.out).not.toContain('internet');
   });
 });
 
@@ -384,7 +425,7 @@ describe('when the push fails, everything is undone', () => {
   }
 
   it('a new drawing: the commit and the copy are gone', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     sb.refusePushes();
     const { r, remote } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
     expect(r.out).toContain('Couldn\'t send it to GitHub. Check the internet connection, then try ./add again.');
@@ -392,8 +433,30 @@ describe('when the push fails, everything is undone', () => {
     expect(sb.remoteFiles()).toEqual(remote);
   });
 
+  // What git says when GitHub doesn't accept the laptop's login, in its usual forms.
+  it.each([
+    'fatal: Authentication failed for \'https://github.com/hornof/sketch-gallery.git/\'',
+    'fatal: could not read Username for \'https://github.com\': terminal prompts disabled',
+    'Permission to hornof/sketch-gallery.git denied to someone-else.',
+    'fatal: unable to access \'https://github.com/hornof/sketch-gallery.git/\': The requested URL returned error: 403',
+  ])('GitHub refuses the login (%s): says to sign in, not to check the internet', async (said) => {
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    sb.refusePushes(said);
+    const { r, remote } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.out).toContain('Couldn\'t send it to GitHub. GitHub didn\'t accept this laptop\'s login. Sign in with gh auth login and try again.');
+    expect(r.out).not.toContain('internet');
+    expect(sb.remoteFiles()).toEqual(remote);
+  });
+
+  it('a refusal that merely contains 403 inside a longer number still gets the internet hint', async () => {
+    const sb = sandbox();
+    sb.refusePushes('error 14031: something else went wrong');
+    const { r } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
+    expect(r.out).toContain('Check the internet connection, then try ./add again.');
+  });
+
   it('a new year next to other years: only the new year folder is gone', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     sb.refusePushes();
     await failedPush(sb, [sb.sourceFile('2027-01-01.jpg', JPEG_A)]);
     expect(existsSync(join(sb.laptop, 'drawings', '2027'))).toBe(false);
@@ -401,21 +464,21 @@ describe('when the push fails, everything is undone', () => {
   });
 
   it('a new year: the new folder is gone too', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     sb.refusePushes();
     await failedPush(sb, [sb.sourceFile('2027-01-01.jpg', JPEG_A)]);
     expect(existsSync(join(sb.laptop, 'drawings'))).toBe(false);
   });
 
   it('a replaced drawing: the old one is back', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-11-03.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-11-03.jpg': JPEG_B });
     sb.refusePushes();
     await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A), '--replace']);
     expect(readFileSync(join(sb.laptop, 'drawings', '2026', '2026-11-03.jpg'))).toEqual(JPEG_B);
   });
 
   it('someone changed GitHub while the question was waiting', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     const { r } = await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)], () => sb.pushFromElsewhere('drawings/2026/2026-03-01.jpg', JPEG_C));
     expect(r.out).toContain('Try ./add again');
     expect(existsSync(join(sb.laptop, 'drawings', '2026', '2026-11-03.jpg'))).toBe(false);
@@ -428,7 +491,7 @@ describe('when the push fails, everything is undone', () => {
   });
 
   it('git refuses the commit: the copy is gone, and GitHub is never asked', async () => {
-    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    const sb = sandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
     writeFileSync(join(sb.laptop, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\necho "no commits today" >&2\nexit 1\n', { mode: 0o755 });
     const before = snapshot(sb);
     const r = await run(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
@@ -439,11 +502,35 @@ describe('when the push fails, everything is undone', () => {
   });
 
   it('the owner\'s other work is still there', async () => {
-    const sb = makeSandbox();
+    const sb = sandbox();
     writeFileSync(join(sb.laptop, 'README.md'), 'my own edit\n');
     sb.refusePushes();
     await failedPush(sb, [sb.sourceFile('2026-11-03.jpg', JPEG_A)]);
     expect(readFileSync(join(sb.laptop, 'README.md'), 'utf8')).toBe('my own edit\n');
+  });
+});
+
+describe('the sandboxes are removed', () => {
+  it('remove() deletes the whole temporary folder, the stand-in for GitHub and every copy in it', () => {
+    const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_B });
+    sb.pushFromElsewhere('notes.txt', 'theirs\n');
+    sb.sourceFile('2026-11-03.jpg', JPEG_A);
+    expect(existsSync(sb.root)).toBe(true);
+    sb.remove();
+    expect(existsSync(sb.root)).toBe(false);
+    sb.remove(); // removing twice is harmless
+  });
+
+  // These two run in order: the first leaves its sandbox, the second checks it's gone.
+  let left;
+  it('a test that uses a sandbox...', () => {
+    left = sandbox().root;
+    expect(existsSync(left)).toBe(true);
+  });
+
+  it('...has it removed when the test ends', () => {
+    expect(left).toBeTruthy();
+    expect(existsSync(left)).toBe(false);
   });
 });
 
