@@ -5,12 +5,21 @@ import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+// How long one git call may take before it is stopped and counts as failed. Sending all
+// the drawings at once can be slow, so it's long; tests make it short.
+export const limits = { gitMs: 10 * 60 * 1000 };
+
+const duration = (ms) => (ms >= 60_000 ? plural(Math.round(ms / 60_000), 'minute') : plural(Math.round(ms / 1000), 'second'));
+
 export function git(repo, ...args) {
-  const r = spawnSync('git', args, { cwd: repo, encoding: 'utf8' });
-  return { ok: r.status === 0, out: (r.stdout ?? '').trim(), err: (r.stderr ?? '').trim() };
+  const r = spawnSync('git', args, { cwd: repo, encoding: 'utf8', timeout: limits.gitMs });
+  let err = (r.stderr ?? '').trim();
+  if (r.error?.code === 'ETIMEDOUT') err = `${err} git ${args[0]} didn't finish within ${duration(limits.gitMs)}, so it was stopped`.trim();
+  return { ok: r.status === 0, out: (r.stdout ?? '').trim(), err };
 }
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // Checks that the repo is ready for a drawing to be added, and gets the latest
 // version from GitHub. Returns null when ready, or a message saying what's wrong
@@ -118,7 +127,7 @@ export function sendToGitHub(repo, files, message, command = './add') {
     let hint = `Check the internet connection, then try ${command} again.`;
     if (moved) hint = `Someone changed GitHub in the meantime. Try ${command} again.`;
     else if (login) hint = 'GitHub didn\'t accept this laptop\'s login. Sign in with gh auth login and try again.';
-    return `Couldn't send it to GitHub. ${hint} (git says: ${push.err})`;
+    return `Couldn't send to GitHub. ${hint} (git says: ${push.err})`;
   }
   return null;
 }

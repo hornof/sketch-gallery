@@ -4,7 +4,7 @@
 // tests, it keeps its temporary folder, so you can look inside.
 //   npm run try-import                          ./import my-drawings/2024 my-drawings/2025, two sample year folders
 //   npm run try-import -- --bad                 the same folders with two bad files: lists both, adds nothing
-//   npm run try-import -- <folder> <folder>     imports your own year folders into the throwaway copy
+//   npm run try-import -- <folder> <folder>     imports your own year folders into the throwaway copy, which starts with no drawings
 // Any other option, like --yes or --replace, is passed on to ./import.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -18,10 +18,13 @@ const given = args.filter((a) => a !== '--bad');
 const options = given.filter((a) => a.startsWith('-'));
 const ownFolders = given.filter((a) => !a.startsWith('-'));
 
-const sb = makeSandbox({ 'drawings/2026/2026-02-28.jpg': JPEG_A });
+// With your own folders, the stand-in for GitHub starts with no drawings, like main before
+// the first load, so what ./import prints matches the real run line for line. The sample
+// folders start next to one drawing already on it.
+const sb = makeSandbox(ownFolders.length > 0 ? {} : { 'drawings/2026/2026-02-28.jpg': JPEG_A });
 const drawingsOnGitHub = () => Object.keys(sb.remoteFiles()).filter((p) => p.startsWith('drawings/'));
 console.log(`Throwaway copy of the repo: ${sb.laptop}`);
-console.log(`Its stand-in for GitHub has: ${drawingsOnGitHub().join(', ')}\n`);
+console.log(`Its stand-in for GitHub has: ${drawingsOnGitHub().join(', ') || 'no drawings'}\n`);
 
 // Your own folders are read from where you ran the command. The sample folders are made
 // in the temporary folder, in my-drawings/2024 and my-drawings/2025.

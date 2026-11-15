@@ -8,23 +8,26 @@ import { fileURLToPath } from 'node:url';
 import exifr from 'exifr';
 import fc from 'fast-check';
 import sharp from 'sharp';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, onTestFinished } from 'vitest';
 import { BuildStopped, MAX_THUMB_BYTES, THUMB_LONG_SIDE, buildDrawings, makeThumbnail, readDrawings } from '../build/drawings.mjs';
 import { PHONE_PHOTO } from './fixtures/make-fixtures.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, 'fixtures', 'drawings');
-// A new temporary folder. Every one is removed when this file's tests end, pass or fail;
-// some are made in beforeAll, where a test's own clean-up can't be used.
-const made = [];
+// A new temporary folder, removed when its test ends, pass or fail. One made in beforeAll,
+// outside any test, is removed when this file's tests end.
+const remove = (dir) => rmSync(dir, { recursive: true, force: true });
+const madeOutsideTests = [];
 const tmp = (name) => {
   const dir = mkdtempSync(join(tmpdir(), `sketch-gallery-${name}-`));
-  made.push(dir);
+  try {
+    onTestFinished(() => remove(dir));
+  } catch {
+    madeOutsideTests.push(dir); // vitest refuses onTestFinished outside a test
+  }
   return dir;
 };
-afterAll(() => {
-  for (const dir of made) rmSync(dir, { recursive: true, force: true });
-});
+afterAll(() => madeOutsideTests.forEach(remove));
 
 // Every file under a folder, as paths relative to it, leaving out hidden files like .DS_Store.
 function filesUnder(dir, prefix = '') {

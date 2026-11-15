@@ -13,10 +13,10 @@ import { getReady, sendToGitHub } from './git.mjs';
 
 export const HELP = `Adds one or more year folders to the gallery, in one commit, and sends them to GitHub.
 
-  ./import ../drawings/2025                     one year
-  ./import ../drawings/2024 ../drawings/2025    several years at once
-  ./import ../drawings/2025 --replace           replaces drawings already there for the same dates
-  ./import ../drawings/2025 --yes               doesn't ask before adding
+  ./import ../my-drawings/2025                        one year
+  ./import ../my-drawings/2024 ../my-drawings/2025    several years at once
+  ./import ../my-drawings/2025 --replace              replaces drawings already there for the same dates
+  ./import ../my-drawings/2025 --yes                  doesn't ask before adding
 
 Each folder is named after its year, and holds only drawings named by date, like
 2025-10-07.jpg. Run it on main. It gets the latest version from GitHub, checks every
@@ -151,7 +151,7 @@ export async function importFolders(args, { repo, print, ask, cwd = process.cwd(
     return 0;
   }
   if (positionals.length === 0) {
-    print(`Which folders? For example: ./import ../drawings/2025\n\n${HELP}`);
+    print(`Which folders? For example: ./import ../my-drawings/2025\n\n${HELP}`);
     return 1;
   }
 
