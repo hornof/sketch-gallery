@@ -350,24 +350,25 @@ test.describe('Back from another page, and reload', () => {
     });
   const scrollDown = (page) => page.evaluate(() => window.scrollTo(0, Math.round((document.documentElement.scrollHeight - window.innerHeight) * 0.6)));
 
-  // Scrolls down the year shown, opens a drawing (today its full-size file), presses Back.
+  // Scrolls down the year shown, goes to another page (a drawing's full-size file; a click
+  // on the drawing opens the pop-up since #18), presses Back.
   async function openDrawingAndBack(page, path) {
     await scrollDown(page);
     const before = await place(page);
     expect(before.y).toBeGreaterThan(0);
-    await page.locator(`.grid a[href="${before.href}"]`).click();
+    await page.goto(before.href);
     await expect.poll(() => new URL(page.url()).pathname).toBe(before.href);
     await page.goBack();
     await expectShows(page, path);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before.y);
   }
 
-  test('scroll down, open a drawing, press Back: the same place in the grid', async ({ page }) => {
+  test('scroll down, go to a drawing\'s full-size file, press Back: the same place in the grid', async ({ page }) => {
     await page.goto(`/${biggest}/`);
     await openDrawingAndBack(page, `/${biggest}/`);
   });
 
-  test('after switching years: scroll down, open a drawing, press Back: the same year, at the same place', async ({ page }) => {
+  test('after switching years: scroll down, go to a drawing\'s full-size file, press Back: the same year, at the same place', async ({ page }) => {
     await page.goto(`/${years.find((y) => y !== biggest)}/`);
     await yearLink(page, biggest).click();
     await expectShows(page, `/${biggest}/`);
@@ -393,12 +394,12 @@ test.describe('Back from another page, and reload', () => {
       expect(await page.evaluate(() => window.scrollY)).toBe(1000);
       await mark(page);
 
-      // Another page: a drawing, today its full-size file.
+      // Another page: a drawing's full-size file (a click on the drawing opens the pop-up since #18).
       const href = await page.evaluate(() => {
         const a = [...document.querySelectorAll('.grid a')].find((t) => t.getBoundingClientRect().top >= 0);
         return a.getAttribute('href');
       });
-      await page.locator(`.grid a[href="${href}"]`).click();
+      await page.goto(href);
       await expect.poll(() => new URL(page.url()).pathname).toBe(href);
 
       // Back: the same page, kept in memory, at the same place. A page shown again from
