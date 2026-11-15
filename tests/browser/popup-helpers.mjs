@@ -109,13 +109,15 @@ export async function waitOpen(page) {
 }
 export const waitClosed = (page) => expect(popup(page)).toHaveCount(0);
 
-// A swipe from the middle of the screen, `dx` and `dy` pixels in ten steps a frame
-// apart: a real touch in Chromium, and elsewhere a mouse drag, which sends the pop-up the
-// same pointer events with another pointer type. The pop-up follows the pointer once a
-// frame, and a drag sent all within one frame doesn't move it at all.
+// A swipe `dx` and `dy` pixels in ten steps a frame apart, from the middle of the screen,
+// or for a sideways swipe, centered on its middle: a real touch in Chromium, and elsewhere
+// a mouse drag, which sends the pop-up the same pointer events with another pointer type.
+// The pop-up follows the pointer once a frame, and a drag sent all within one frame
+// doesn't move it at all. A sideways swipe is centered so it stays on the screen: Firefox
+// doesn't tell the page about a mouse button let go off the screen.
 export async function swipe(page, browserName, { dx = 0, dy = 0 }) {
   const { width, height } = page.viewportSize();
-  const x = Math.round(width / 2);
+  const x = Math.round(width / 2 - dx / 2);
   const y = Math.round(height / 2);
   const at = (i) => ({ x: Math.round(x + (dx * i) / 10), y: Math.round(y + (dy * i) / 10) });
   if (browserName === 'chromium') {

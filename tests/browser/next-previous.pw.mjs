@@ -77,13 +77,17 @@ async function openAt(page, date) {
   await waitOpen(page);
 }
 
+// How far a swipe goes, as a share of the screen's width: more than half, so it moves on
+// whatever the speed it ends with.
+const SWIPE = 0.6;
+
 // The ways to step: forward and back with the on-screen arrows, the keyboard and a swipe.
 const stepWays = {
   'arrow buttons': { next: (page) => button(page, 'Next').click(), prev: (page) => button(page, 'Previous').click() },
   'arrow keys': { next: (page) => page.keyboard.press('ArrowRight'), prev: (page) => page.keyboard.press('ArrowLeft') },
   swipes: {
-    next: (page, browserName) => swipe(page, browserName, { dx: -Math.round(page.viewportSize().width * 0.6) }),
-    prev: (page, browserName) => swipe(page, browserName, { dx: Math.round(page.viewportSize().width * 0.6) }),
+    next: (page, browserName) => swipe(page, browserName, { dx: -Math.round(page.viewportSize().width * SWIPE) }),
+    prev: (page, browserName) => swipe(page, browserName, { dx: Math.round(page.viewportSize().width * SWIPE) }),
   },
 };
 
@@ -133,7 +137,7 @@ test.describe('R6 (next and previous)', () => {
       await openAt(page, date);
       const rest = await page.locator('.pswp__container').evaluate((c) => c.style.transform);
       await startRow(page, 1200);
-      const dx = Math.round(page.viewportSize().width * 0.6) * (end === 'first' ? 1 : -1);
+      const dx = Math.round(page.viewportSize().width * SWIPE) * (end === 'first' ? 1 : -1);
       await swipe(page, browserName, { dx });
       const xs = await rowFrames(page);
       // It moved with the finger, a little, then came back.
