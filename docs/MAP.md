@@ -4,7 +4,7 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** Build. [#16](https://github.com/hornof/sketch-gallery/issues/16) (year pages and grid), on the drawings. Next: [#17](https://github.com/hornof/sketch-gallery/issues/17) (switching years in place)
+**Now:** Build. [#17](https://github.com/hornof/sketch-gallery/issues/17) (switching years in place)
 
 ```mermaid
 flowchart LR
@@ -34,7 +34,7 @@ flowchart LR
 | [docs/collaborator-guide.md](collaborator-guide.md) | The steps, in order, for a collaborator invited to the project | When someone joins |
 | [scripts/map-artifact.py](../scripts/map-artifact.py) | Builds the map artifact from `docs/MAP.md`. Its tests are in `scripts/test_map_artifact.py`. | After every change to `docs/MAP.md`, and again from main after each merge |
 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | The test workflow GitHub runs on every PR and every push to main: it installs, builds the site and runs the site's tests on Node 22, then runs the map script's tests; the browser tests and Lighthouse run beside them | Every PR, every push to main |
-| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`; then the home page and one page per year, made by `build/pages.mjs` | Every build |
+| [build/build.mjs](../build/build.mjs) | Builds the site into `dist/`: the thumbnails, the full-size copies and the list of drawings, made by `build/drawings.mjs`, `build/dates.mjs` and `build/jpeg.mjs`; then the home page and one page per year, made by `build/pages.mjs`, and `/site.js`, a copy of `build/site.js`, the page code that switches years in place | Every build |
 | [add](../add) | The `./add` command: adds one drawing and sends it to GitHub. Its code is in [commands/](../commands/). `./add --help` says how to use it. | Each time the human adds a drawing |
 | [import](../import) | The `./import` command: adds one or more year folders in one commit and sends them to GitHub, all or nothing. Its code is in [commands/](../commands/). `./import --help` says how to use it. | Loading the drawings once, then any past year |
 | [tests/](../tests/) | The site's automatic tests, run by `npm test`, and the browser tests in `tests/browser/`, run by `npm run test:browser` in Chromium, Firefox and WebKit at 375, 768 and 1440 px | Every PR, every push to main |
