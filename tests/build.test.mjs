@@ -61,6 +61,14 @@ describe('build/build.mjs', () => {
     }
   });
 
+  // Link preview and browser rules (#20): the image every page names exists, and the rules file is there.
+  it('writes the link preview image and the browser rules', () => {
+    const html = readFileSync(page, 'utf8');
+    const image = html.match(/<meta property="og:image" content="https:\/\/sketch-gallery\.hornof\.org(\/[^"]+)">/)[1];
+    expect(existsSync(join(root, 'dist', image))).toBe(true);
+    expect(readFileSync(join(root, 'dist', '_headers'), 'utf8')).toContain('Content-Security-Policy:');
+  });
+
   it('stops when the folder given with --drawings does not exist', () => {
     const missing = join(tmpdir(), 'sketch-gallery-no-such-folder');
     const run = spawnSync(process.execPath, [join(root, 'build', 'build.mjs'), '--drawings', missing], { cwd: root, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
@@ -92,6 +100,7 @@ describe('build/build.mjs with no drawings/ folder', () => {
     const copy = realpathSync(mkdtempSync(join(tmpdir(), 'sketch-gallery-no-drawings-')));
     onTestFinished(() => rmSync(copy, { recursive: true, force: true }));
     cpSync(join(root, 'build'), join(copy, 'build'), { recursive: true });
+    cpSync(join(root, 'site.json'), join(copy, 'site.json')); // the build reads it (#20)
     symlinkSync(join(root, 'node_modules'), join(copy, 'node_modules'), 'dir');
     const run = spawnSync(process.execPath, [join(copy, 'build', 'build.mjs')], { cwd: copy, encoding: 'utf8', timeout: CHILD_TIMEOUT_MS });
     expect(run.status).toBe(1);

@@ -10,7 +10,8 @@ You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stry
 
 - `npm install` installs the tools, once.
 - `npm run build` builds the site into `dist/` from the drawings in `drawings/`, one folder per year, each file named like `2025-10-07.jpg`. With no `drawings/` folder, the build stops and says so, so the host keeps the last good site live. `npm run build -- --drawings tests/fixtures/drawings` builds the test drawings instead. `--drawings <folder>` works with any folder laid out the same way. That folder must hold only year folders. If a file breaks the rules, the build stops and lists every problem.
-- `npm run serve` shows the built site at http://localhost:4173/, the way Cloudflare serves it. `dist/drawings.json` is the list of drawings.
+- `npm run serve` shows the built site at http://localhost:4173/, the way Cloudflare serves it, with the browser rules from `dist/_headers`. `dist/drawings.json` is the list of drawings.
+- `site.json` holds the title, the description line, the address, and the date of the drawing the link preview shows, like `"preview": "2025-10-07"`. The build makes `dist/preview.jpg` from that drawing. If there's no drawing with that date, the build uses the newest one and says so.
 - `./add 2026-11-03.jpg` adds one drawing and sends it to GitHub; the site shows it about 2 minutes later. Run it on main. It gets the latest version from GitHub first, checks the file, says what it will do and asks for a yes. It changes nothing if anything is wrong, and undoes everything if sending to GitHub fails.
   - `./add photo.jpg --date 2026-11-03` adds a file that isn't named by date, and gives it that name.
   - `--replace` replaces the drawing already there for that date. Without it, `./add` refuses a date that already has a drawing.
@@ -47,6 +48,9 @@ GitHub runs the build, the site's tests, the map script's tests, the browser tes
 | .nvmrc | The Node version (22), for the laptop and the automatic tests | Claude |
 | build/build.mjs | Builds the site into `dist/` (not stored in the repo) | Claude |
 | build/pages.mjs | Writes the home page and one page per year, and puts the page code, the pop-up (PhotoSwipe, in `/popup/`) and the fonts on the site | Claude |
+| site.json | The site's title, description line and address, and which drawing the link preview shows | the human, Claude |
+| build/preview.mjs | The link preview: the tags every page carries, and `/preview.jpg` (1200 × 630) made from the drawing `site.json` picks | Claude |
+| build/headers.mjs | The browser rules, written to `_headers` and sent with every page: only the site's own code runs, and only hornof.org may show the site in a frame | Claude |
 | build/site.js | The page code, served as `/site.js`: the year menu changes the grid without loading a new page, and Back and Forward move between years; a click on a drawing opens it in the pop-up, and Back closes it. Every page works without it | Claude |
 | build/drawings.mjs | Reads the drawings folder, checks the file rules, makes the thumbnails, the full-size copies and the list of drawings | Claude |
 | build/dates.mjs | Turns a file name like `2025-10-07.jpg` into a date and back, and writes labels like "October 7" | Claude |
