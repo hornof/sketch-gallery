@@ -18,8 +18,8 @@ export const CSP = [
   'frame-ancestors https://hornof.org https://www.hornof.org',
 ].join('; ');
 
-// The page code (#37): Cloudflare lets browsers keep script files for 4 hours, so after a
-// release a browser could run old code with new pages. "no-cache" makes the browser check
+// The page code (#37): on sketch-gallery.hornof.org, Cloudflare's setting for the hornof.org
+// domain lets browsers keep files for 4 hours, so after a release a browser could run old code with new pages. "no-cache" makes the browser check
 // with the server on every visit (an unchanged file comes back as a short 304). Only these
 // rules set Cache-Control: Cloudflare joins a header set by two matching rules with commas.
 const FRESH = ['/site.js', '/popup/*'];
