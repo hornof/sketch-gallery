@@ -18,7 +18,14 @@ export const CSP = [
   'frame-ancestors https://hornof.org https://www.hornof.org',
 ].join('; ');
 
-export const HEADERS = `/*\n  Content-Security-Policy: ${CSP}\n`;
+// The page code (#37): Cloudflare lets browsers keep script files for 4 hours, so after a
+// release a browser could run old code with new pages. "no-cache" makes the browser check
+// with the server on every visit (an unchanged file comes back as a short 304). Only these
+// rules set Cache-Control: Cloudflare joins a header set by two matching rules with commas.
+const FRESH = ['/site.js', '/popup/*'];
+
+export const HEADERS = `/*\n  Content-Security-Policy: ${CSP}\n`
+  + FRESH.map((path) => `${path}\n  Cache-Control: no-cache\n`).join('');
 
 export function writeHeaders(to) {
   writeFileSync(join(to, '_headers'), HEADERS);
