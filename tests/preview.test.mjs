@@ -187,7 +187,28 @@ describe('browser rules (_headers)', () => {
     writeHeaders(to);
     const text = readFileSync(join(to, '_headers'), 'utf8');
     for (const path of ['/', '/2025/', '/site.js', '/full/2025/2025-10-07.jpg', '/preview.jpg']) {
+      expect(headersFor(text, path)['Content-Security-Policy']).toBe(CSP);
+    }
+  });
+
+  // #37: the page code is checked with the server on every visit, like the pages, so a
+  // release reaches a browser that visited in the last 4 hours. Everything else keeps
+  // Cloudflare's own caching (no Cache-Control from _headers).
+  it('makes browsers check site.js and the pop-up files with the server on every visit (#37)', () => {
+    const to = tmp('headers-cache');
+    writeHeaders(to);
+    const text = readFileSync(join(to, '_headers'), 'utf8');
+    for (const path of ['/site.js', '/popup/popup.css', '/popup/photoswipe.esm.min.js', '/popup/photoswipe-lightbox.esm.min.js']) {
+      expect(headersFor(text, path)).toEqual({ 'Content-Security-Policy': CSP, 'Cache-Control': 'no-cache' });
+    }
+    for (const path of ['/', '/2025/', '/full/2025/2025-10-07.jpg', '/preview.jpg', '/fonts/x.woff2', '/site.js.map', '/popupx/a.js']) {
       expect(headersFor(text, path)).toEqual({ 'Content-Security-Policy': CSP });
+    }
+    // Cloudflare joins a header set by two matching rules with commas, so no address may get
+    // Cache-Control from more than one rule.
+    const rules = text.split(/\n(?=\S)/).filter((r) => /Cache-Control:/.test(r));
+    for (const path of ['/site.js', '/popup/popup.css']) {
+      expect(rules.filter((r) => Object.keys(headersFor(r, path)).length).length).toBe(1);
     }
   });
 
