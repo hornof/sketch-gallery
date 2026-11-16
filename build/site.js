@@ -116,12 +116,30 @@
 // in PhotoSwipe at full size, with a zoom from its thumbnail. PhotoSwipe's code and look
 // are fetched from /popup/ the first time a drawing is opened. Opening a drawing adds a
 // step to the browser's history, and closing it any way goes back that step, so Back
-// closes the pop-up and Forward opens the same drawing again. The step keeps the year's
-// address; links to single drawings come with #20. With JavaScript off, a drawing's link
-// loads its full-size file.
+// closes the pop-up and Forward opens the same drawing again. With JavaScript off, a
+// drawing's link loads its full-size file.
+// Next and previous, and drawing links (#19, TDD sections 3 and 5). The arrow buttons,
+// the arrow keys and a swipe all slide to the next drawing, within 350 ms, and stop at the
+// year's first and last drawing. A counter and a caption name the drawing shown. The
+// history step's address is the drawing's link, like /2025/#2025-10-07, and changes as
+// the visitor moves on, without adding steps. Opening such a link opens that drawing; a
+// link to anything else opens the year.
 (() => {
   const grid = document.querySelector('.grid');
   if (!grid) return;
+
+  // How quickly the slide between drawings settles. PhotoSwipe moves the row of drawings
+  // like a spring; its own 30 takes up to about 350 ms across a wide screen, and 40 about
+  // 250 ms. When the device asks for less motion, the row moves in one step instead.
+  const SLIDE_SPRING = 40;
+  const NO_SLIDE_SPRING = 1e5;
+  // The same test PhotoSwipe uses to switch off its own animations.
+  const lessMotion = () => matchMedia('(prefers-reduced-motion), (update: slow)').matches;
+
+  // A drawing's link: the year's address, then # and the drawing's date.
+  const dateIn = (hash) => hash.match(/^#(\d{4}-\d{2}-\d{2})$/)?.[1] ?? null;
+  const linkTo = (date) => `${location.pathname}${location.search}#${date}`;
+  const withoutLink = () => `${location.pathname}${location.search}`;
 
   // PhotoSwipe, fetched once. If fetching fails, the next click tries again.
   let photoswipe;
@@ -176,12 +194,15 @@
       const links = tiles();
       // A drawing opened from the keyboard gets the focus back when the pop-up closes.
       const focusBack = document.activeElement === links[index];
+      const items = links.map((a) => {
+        const img = a.querySelector('img');
+        return { element: a, date: a.dataset.date, src: a.getAttribute('href'), width: Number(a.dataset.width), height: Number(a.dataset.height), alt: img.alt, msrc: img.currentSrc || img.src };
+      });
       const p = new PhotoSwipe({
-        dataSource: links.map((a) => {
-          const img = a.querySelector('img');
-          return { element: a, src: a.getAttribute('href'), width: Number(a.dataset.width), height: Number(a.dataset.height), alt: img.alt, msrc: img.currentSrc || img.src };
-        }),
+        dataSource: items,
         index,
+        // Stop at the year's first and last drawing (R6): no wraparound, and no arrow at either end.
+        loop: false,
         initialPointerPos: pointer,
         // A near-black background that hides the page (PRD section 6).
         bgOpacity: 1,
@@ -202,6 +223,34 @@
         returnFocus: false,
       });
       p.addFilter('thumbBounds', (bounds, item) => drawnBounds(item));
+      // The arrow buttons and keys slide to the next drawing, as a swipe does (R6);
+      // PhotoSwipe's own next and previous jump.
+      p.next = () => p.mainScroll.moveIndexBy(1, true);
+      p.prev = () => p.mainScroll.moveIndexBy(-1, true);
+      // Every slide, and the spring back from a swipe past an end, within 350 ms, or in one
+      // step when the device asks for less motion (R8).
+      const startSpring = p.animations.startSpring.bind(p.animations);
+      p.animations.startSpring = (props) => startSpring(props.isMainScroll ? { ...props, naturalFrequency: lessMotion() ? NO_SLIDE_SPRING : SLIDE_SPRING } : props);
+      // The caption under the drawing: its full date, "October 7, 2025". Screen readers
+      // already hear the date as the drawing's description, so it is hidden from them.
+      p.on('uiRegister', () => {
+        p.ui.registerElement({
+          name: 'caption',
+          className: 'pswp__caption pswp__hide-on-close',
+          appendTo: 'root',
+          onInit: (el) => {
+            el.setAttribute('aria-hidden', 'true');
+            p.on('change', () => {
+              el.textContent = items[p.currIndex].alt;
+            });
+          },
+        });
+      });
+      // The address follows the drawing shown, without adding steps (TDD section 5).
+      p.on('change', () => {
+        const { date } = items[p.currIndex];
+        if (history.state?.drawing && history.state.drawing !== date) history.replaceState({ drawing: date }, '', linkTo(date));
+      });
       // On a phone, a tap on the dark area closes the pop-up, as a click does (R5); a tap
       // on the drawing shows or hides the buttons, as PhotoSwipe does.
       p.on('tapAction', (e) => {
@@ -215,6 +264,7 @@
       // opening added. Closed by Back: that step is already gone.
       p.on('close', () => {
         if (history.state?.drawing) history.back();
+        else if (dateIn(location.hash)) history.replaceState(history.state, '', withoutLink());
       });
       p.on('destroy', () => {
         pswp = null;
@@ -244,14 +294,15 @@
       // On window, so it runs after PhotoSwipe's own key handling on the document.
       addEventListener('keydown', onTab);
       p.on('destroy', () => removeEventListener('keydown', onTab));
-      if (addStep) history.pushState({ drawing: links[index].dataset.date }, '');
+      if (addStep) history.pushState({ drawing: items[index].date }, '', linkTo(items[index].date));
     } finally {
       opening = false;
     }
   }
 
+  const indexOf = (date) => tiles().findIndex((a) => a.dataset.date === date);
   function openDate(date) {
-    const index = tiles().findIndex((a) => a.dataset.date === date);
+    const index = indexOf(date);
     if (index >= 0) open(index).catch(() => {});
   }
 
@@ -279,12 +330,26 @@
   // Back to a step with no drawing open closes the pop-up; Forward to a drawing's step
   // opens it again. The year code above has already shown that step's year.
   addEventListener('popstate', () => {
-    const date = history.state?.drawing;
+    const date = history.state?.drawing ?? dateIn(location.hash);
     if (date) {
       if (!pswp) openDate(date);
+      else if (indexOf(date) >= 0 && indexOf(date) !== pswp.currIndex) pswp.goTo(indexOf(date));
     } else if (pswp) pswp.close();
   });
 
-  // A reload on a drawing's step opens that drawing again.
-  if (history.state?.drawing) openDate(history.state.drawing);
+  // Arriving at a drawing's link, like /2025/#2025-10-07, opens that drawing. Arriving from
+  // outside, the link becomes a history step of its own after the year's, so closing the
+  // drawing goes to the year, as if it had been opened here. A reload on a drawing's step
+  // opens the drawing again. A link to anything that isn't one of the year's drawings
+  // opens just the year, at its own address (PRD section 6).
+  const arrived = history.state?.drawing ?? dateIn(location.hash);
+  if (arrived !== null && indexOf(arrived) >= 0) {
+    if (!history.state?.drawing) {
+      history.replaceState(history.state, '', withoutLink());
+      history.pushState({ drawing: arrived }, '', linkTo(arrived));
+    }
+    openDate(arrived);
+  } else if (location.hash) {
+    history.replaceState(history.state?.drawing ? null : history.state, '', withoutLink());
+  }
 })();

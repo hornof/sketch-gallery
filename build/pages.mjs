@@ -30,6 +30,9 @@ const scriptSource = join(dirname(fileURLToPath(import.meta.url)), 'site.js');
 // ring on the button the keyboard has reached, which shows on that background. PhotoSwipe
 // spins its loading indicator all the time, hidden until a drawing is slow to load; here
 // it spins only while shown, and not at all when the device asks for less motion.
+// From #19: the counter at the top left and the caption below the drawing, in the page's
+// font, and round arrow buttons at the sides, shown on phones too (PhotoSwipe hides them
+// on touch screens), as in the mockups (PRD section 6).
 const POPUP = '/popup';
 const POPUP_CSS = `
 /* The site's own rules for the pop-up (build/pages.mjs) */
@@ -38,6 +41,17 @@ const POPUP_CSS = `
 .pswp__preloader .pswp__icn{animation:none}
 .pswp__preloader--active .pswp__icn{animation:pswp-clockwise 600ms linear infinite}
 @media (prefers-reduced-motion:reduce){.pswp__preloader--active .pswp__icn{animation:none}}
+.pswp__counter{height:auto;margin:14px 0 0 20px;font:400 1.0625rem/1.5 Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#fff;text-shadow:none;opacity:1}
+.pswp__caption{position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;justify-content:center;padding:0 16px;font:400 1rem/1.5 Inter,system-ui,sans-serif;color:#fff;text-align:center}
+.pswp--ui-visible .pswp__caption{pointer-events:none}
+@media (min-width:560px){.pswp__caption{height:64px;font-size:1.0625rem}}
+.pswp__button--arrow{width:56px;height:56px;margin-top:-28px;border-radius:50%}
+.pswp__button--arrow,.pswp__button--arrow:hover,.pswp__button--arrow:active,.pswp__button--arrow:focus{background:rgba(38,38,38,.9);border:1px solid rgba(255,255,255,.3)}
+.pswp--touch .pswp__button--arrow{visibility:visible}
+.pswp__button--arrow--prev{left:8px}
+.pswp__button--arrow--next{right:8px}
+.pswp__button--arrow .pswp__icn{top:50%;left:50%;right:auto;width:36px;height:36px;margin:-18px 0 0 -18px;transform:translateX(6px)}
+.pswp__button--arrow--next .pswp__icn{transform:scale(-1,1) translateX(6px)}
 `;
 
 // The fonts, stored on the site itself (TDD section 3): the Latin letters of each,
@@ -95,7 +109,7 @@ function thumbSize({ width, height }) {
 function tile(d, i) {
   const { w, h } = thumbSize(d);
   const loading = i < EAGER_THUMBS ? (i === 0 ? ' fetchpriority="high"' : '') : ' loading="lazy"';
-  return `<li><a href="${d.full}" data-date="${d.date}" data-width="${d.width}" data-height="${d.height}"><img src="${d.thumb}" alt="${d.caption}" width="${w}" height="${h}" decoding="async"${loading}></a><p class="label" aria-hidden="true">${d.label}</p></li>`;
+  return `<li><a id="${d.date}" href="${d.full}" data-date="${d.date}" data-width="${d.width}" data-height="${d.height}"><img src="${d.thumb}" alt="${d.caption}" width="${w}" height="${h}" decoding="async"${loading}></a><p class="label" aria-hidden="true">${d.label}</p></li>`;
 }
 
 const tilesOf = (year, list) => list.filter((d) => d.year === year).map(tile).join('\n');

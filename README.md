@@ -51,7 +51,7 @@ GitHub runs the build, the site's tests, the map script's tests, the browser tes
 | site.json | The site's title, description line and address, and which drawing the link preview shows | the human, Claude |
 | build/preview.mjs | The link preview: the tags every page carries, and `/preview.jpg` (1200 × 630) made from the drawing `site.json` picks | Claude |
 | build/headers.mjs | The browser rules, written to `_headers` and sent with every page: only the site's own code runs, and only hornof.org may show the site in a frame | Claude |
-| build/site.js | The page code, served as `/site.js`: the year menu changes the grid without loading a new page, and Back and Forward move between years; a click on a drawing opens it in the pop-up, and Back closes it. Every page works without it | Claude |
+| build/site.js | The page code, served as `/site.js`: the year menu changes the grid without loading a new page, and Back and Forward move between years; a click on a drawing opens it in the pop-up, and Back closes it; in the pop-up, arrows, keys and swipes slide to the next drawing, and the address is the drawing's link, like `/2025/#2025-10-07`. Every page works without it | Claude |
 | build/drawings.mjs | Reads the drawings folder, checks the file rules, makes the thumbnails, the full-size copies and the list of drawings | Claude |
 | build/dates.mjs | Turns a file name like `2025-10-07.jpg` into a date and back, and writes labels like "October 7" | Claude |
 | build/jpeg.mjs | Removes hidden notes, like the place a photo was taken, from the full-size copies, keeping only which way is up | Claude |
