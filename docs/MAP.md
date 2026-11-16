@@ -73,4 +73,5 @@ Folders, and scheduled tasks that run Claude unattended.
 |---|---|---|
 | ChatGPT | Made the drawings, driven by Claude in the human's browser | Done |
 | Cloudflare Pages | Free hosting for the site at `sketch-gallery.hornof.org`, plus a preview address for every branch, like `year-pages.sketch-gallery.pages.dev` | Set up in #12 |
+| Cloudflare Cache Rule on hornof.org: "sketch-gallery: browsers follow the site's own cache headers" | For `sketch-gallery.hornof.org` only, browsers follow the site's own cache headers instead of the domain's 4-hour default, so a release reaches visitors at once | Added for #37 |
 | hornof.org projects page | An entry for this project once it's live | After launch |
