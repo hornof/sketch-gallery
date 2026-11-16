@@ -8,7 +8,7 @@ The map exists in two places with the same content: `docs/MAP.md` in the GitHub 
 
 ```mermaid
 flowchart LR
-  s1["PRD input"]:::done --> s2["PRD (gate 1)"]:::done --> s3["TDD (gate 2)"]:::done --> s4["Split the TDD into issues"]:::done --> s5["Build"]:::done --> s6["Review and merge (gate 3)"]:::done --> s7["Check the live product"]:::done
+  s1["PRD input"]:::done --> s2["PRD (gate 1)"]:::done --> s3["TDD (gate 2)"]:::done --> s4["Split the TDD into issues"]:::done --> s5["Build"]:::done --> s6["Review and merge (gate 3)"]:::done --> s7["Check the live product"]:::now
   classDef done fill:#E3EFE9,stroke:#1F5E4A,color:#1F5E4A
   classDef now fill:#1F5E4A,stroke:#1F5E4A,color:#FFFFFF
   classDef next fill:#FFFFFF,stroke:#BBB6AC,color:#55524B
