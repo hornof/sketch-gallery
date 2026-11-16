@@ -9,7 +9,7 @@ The checks done at launch: the ones that need a person (the TDD's section 12, it
 | iMessage link preview | Passed: the whole drawing, the title "Sketch Gallery" and the address | The human, 2026-11-15 |
 | A real phone (iPhone), which is also the human's sign-off on a phone: years, thumbnails, full size, pinch to zoom, next and previous, no Next arrow on the last drawing | Passed: "iPhone looks amazing" | The human, 2026-11-15, main at ebf5fb8 |
 | Slack link preview | Skipped by the human | |
-| The live demo of `./add`, timed | To do | |
+| The live demo of `./add`, timed | Passed: `./add` added a sample drawing as November 15, 2026 at 5:48:00 PM; it was live, with its thumbnail, at 5:48:32 PM, 32 seconds later (target: within 5 minutes) | Claude, at the human's request, 2026-11-15, commit b4548f4 |
 | Undoing one release | Passed: in the Cloudflare dashboard, production rolled back from 9f53726 to ebf5fb8 and forward again; every live page and thumbnail loaded both times | Claude, in the human's browser, 2026-11-15 |
 | A push from an account without access is refused | Passed: the owner is the repo's only collaborator, and a push with no GitHub login was refused | Claude, 2026-11-15 |
 | Sign-off on a laptop | Passed: the pop-up, arrows and years on a laptop (after a hard reload, see #37) | The human, 2026-11-15 |
