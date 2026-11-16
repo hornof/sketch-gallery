@@ -75,6 +75,9 @@ function expectSameRect(actual, expected, label) {
 async function holdAnimations(page, at) {
   await page.evaluate(
     ({ at, code }) => {
+      // Turned into a function now, while the test is running this code: the page's browser
+      // rules (#20) forbid turning text into code later, from the page's own timers.
+      const shown = eval(`() => ${code}`);
       window.held = new Promise((resolve) => {
         const t0 = performance.now();
         const step = () => {
@@ -85,7 +88,7 @@ async function holdAnimations(page, at) {
               a.pause();
               a.currentTime = at === 'start' ? 0 : a.effect.getComputedTiming().endTime;
             }
-            const r = eval(code).getBoundingClientRect();
+            const r = shown().getBoundingClientRect();
             for (const a of anims) a.play();
             resolve({ x: r.left, y: r.top, w: r.width, h: r.height });
           } else if (performance.now() - t0 > 10_000) resolve(null);
