@@ -4,11 +4,11 @@ Every piece of this project, where it lives, and when it's used. Claude adds eac
 
 The map exists in two places with the same content: `docs/MAP.md` in the GitHub repo, and the [map artifact](https://claude.ai/artifact/Pm6QZUibPcqXohWUKnVLSx) in Claude. Claude edits only `docs/MAP.md` and builds the map artifact from it.
 
-**Now:** Build. [#18](https://github.com/hornof/sketch-gallery/issues/18) (the pop-up)
+**Now:** Done. Every build issue is merged and the site is live at sketch-gallery.hornof.org.
 
 ```mermaid
 flowchart LR
-  s1["PRD input"]:::done --> s2["PRD (gate 1)"]:::done --> s3["TDD (gate 2)"]:::done --> s4["Split the TDD into issues"]:::done --> s5["Build"]:::now --> s6["Review and merge (gate 3)"]:::next --> s7["Check the live product"]:::next
+  s1["PRD input"]:::done --> s2["PRD (gate 1)"]:::done --> s3["TDD (gate 2)"]:::done --> s4["Split the TDD into issues"]:::done --> s5["Build"]:::done --> s6["Review and merge (gate 3)"]:::done --> s7["Check the live product"]:::done
   classDef done fill:#E3EFE9,stroke:#1F5E4A,color:#1F5E4A
   classDef now fill:#1F5E4A,stroke:#1F5E4A,color:#FFFFFF
   classDef next fill:#FFFFFF,stroke:#BBB6AC,color:#55524B
@@ -57,7 +57,7 @@ Web pages Claude makes and hosts on claude.ai. Each is private to its owner unti
 | [Placeholder Drawing Review](https://claude.ai/artifact/7DVZ6m3ZC6wztNZzgvbHci) (plain page) | Every drawing by year, newest year first, plus the ones set aside | While the drawings were made; reference |
 | [Placeholder Drawing Trials](https://claude.ai/artifact/1o6uuCreKn6wVuCyqG5dHV) (plain page) | Six drawing sources compared, which led to choosing ChatGPT | Done; kept for the record |
 | [Thumbnail Size Check](https://claude.ai/artifact/BTyoAzjMcVd7Sew6XvW298) (plain page) | Three drawings as 600 and 500 pixel thumbnails, side by side; the human chose 500 from it | Done; kept for the record |
-| [Gallery Grid Preview](https://claude.ai/artifact/41sbeWZm5yDSiGRenbXgxB) (plain page) | Screenshots of the year pages with all 161 drawings, for the human's look at PR #27 | In use for PR #27's review; then kept for the record |
+| [Gallery Grid Preview](https://claude.ai/artifact/41sbeWZm5yDSiGRenbXgxB) (plain page) | Screenshots of the year pages with all 161 drawings, for the human's look at PR #27 | Done; kept for the record |
 
 ## On the human's computer
 Folders, and scheduled tasks that run Claude unattended.
