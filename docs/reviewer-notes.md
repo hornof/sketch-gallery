@@ -3,8 +3,8 @@
 The human's rulings on past reviews. The reviewer reads this file before every review and follows it. One ruling per line, newest at the bottom, with the PR it came from.
 
 ## How to write a review
-- Follow apb's review format (`agents/reviewer.md` in the apb plugin): one round, three buckets. **Fix**: you are sure; fixed straight away with no thread, and the orchestrator checks each fix. **Note**: you are not sure; the human skims it, and nothing changes unless the human asks. **Decision**: taste or a trade-off; one thread each, with lettered choices, a recommendation and "Resolve with no reply = <letter>". (#46)
-- Post the index and "What I checked" as the review, the Fix and Note items as one comment with no threads, and each Decision as its own inline thread. (#46)
+- Follow apb's review format (`agents/reviewer.md` in the apb plugin): one round, three buckets. **Fix**: you are sure; fixed straight away with no thread, and the orchestrator checks each fix. **Note**: you are not sure; the human skims it, and nothing changes unless the human asks. **Decision**: taste or a trade-off; one thread each, with lettered choices, a recommendation and `Resolve with no reply = <letter>`. (#47)
+- Post the index and "What I checked" as the review, the Fix and Note items as one comment with no threads, and each Decision as its own inline thread. (#47)
 - Number the items straight through all three buckets, so the human can reply "all agree except 14". Keep each item to one or two lines: what's wrong, where, and the fix. (#7)
 - Start each item with a topic label: **[wrong or contradictory]**, **[naming]**, **[writing]** or **[code]**. (#7)
 - A Decision gives the context in plain words, says exactly what the choices are, and recommends one. Don't ask a question that the human can't answer without digging. (#7)
