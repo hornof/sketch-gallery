@@ -47,7 +47,7 @@ flowchart LR
 | [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name, drawing, `./add` and `./import` code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
 | Coordination issue: [hornof/apb#25](https://github.com/hornof/apb/issues/25) | Where the orchestrator and the advisor talk, named on the `coordination:` line in `CLAUDE.md`. The apb plugin's watcher wakes the orchestrator when it changes. | Every stage |
-| Claude's GitHub account: [hornof-claude](https://github.com/hornof-claude) | The account Claude Code acts as on GitHub, a collaborator on hornof/apb and its board. Its token never expires. | Every stage |
+| Claude's GitHub account: [hornof-claude](https://github.com/hornof-claude) | The account Claude Code acts as on GitHub, a collaborator on this repo, hornof/apb and both boards. Its token never expires. | Every stage |
 | `.claude/settings.local.json` in the local copy (git-ignored) | The token of Claude's GitHub account, and the git author that makes commits show the account | Every stage |
 
 ## Claude artifacts
