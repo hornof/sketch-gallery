@@ -29,8 +29,9 @@ You need Node 22, version 22.12 or later (`.nvmrc` installs the newest 22). Stry
 - `npm run mutation` runs Stryker: it puts small deliberate bugs into the date, file-name, drawing, `./add` and `./import` code and checks that a test catches each one. It takes 10 to 30 minutes.
 - `npm run fixtures` makes the test drawings again.
 - `python3 scripts/test_map_artifact.py` runs the map script's tests.
+- `python3 scripts/test_docs_only.py` runs the tests for the docs-only check.
 
-GitHub runs the build, the site's tests, the map script's tests, the browser tests and Lighthouse on every PR and every push to main.
+GitHub runs the build, the site's tests, the map script's tests, the browser tests and Lighthouse on every PR and every push to main. A PR or push that changes only docs (Markdown files and anything in `docs/`) skips the browser tests and Lighthouse.
 
 ## Files
 
@@ -40,7 +41,8 @@ GitHub runs the build, the site's tests, the map script's tests, the browser tes
 | docs/MAP.md | Every piece of the project and where it lives | anyone |
 | docs/drawings.md | The drawings: themes by year, samples, how they were made; images in docs/drawings/ | the human |
 | docs/research/drawing-sources.md | The six drawing sources compared, and why ChatGPT was chosen; images in docs/research/drawing-sources/ | the human |
-| .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, the site's tests, the map script's tests, the browser tests and Lighthouse | Claude |
+| .github/workflows/ci.yml | The test workflow GitHub runs on every PR and every push to main: install, build, the site's tests, the map script's tests, the browser tests and Lighthouse. A change to docs only skips the browser tests and Lighthouse. | Claude |
+| scripts/docs-only.py | Tells the test workflow whether a PR or push changes only docs (Markdown files and anything in `docs/`). Its tests are in `scripts/test_docs_only.py`. | Claude |
 | playwright.config.mjs | Settings for the browser tests: which browsers and widths | Claude |
 | lighthouserc.json | Settings for Lighthouse: which page, and the lowest scores allowed | Claude |
 | scripts/lighthouse-scores.mjs | Prints the Lighthouse scores, and adds them to the summary of GitHub's test run | Claude |
