@@ -3,23 +3,20 @@
 The human's rulings on past reviews. The reviewer reads this file before every review and follows it. One ruling per line, newest at the bottom, with the PR it came from.
 
 ## How to write a review
-- Post the whole review on the PR before anything is fixed. Group the items under three headings: **High confidence** (the human skims these; a mistake here is a big deal), **Low confidence** (the human reads these carefully), and **Needs the human** (taste calls, or things the reviewer can't decide). Put most items under High confidence, but only items you're sure of. (#7)
-- Number the items straight through all three groups, so the human can reply "all agree except 14". Keep each item to one or two lines: what's wrong, where, and the fix. (#7)
+- Follow apb's review format (`agents/reviewer.md` in the apb plugin): one round, three buckets. **Fix**: you are sure; fixed straight away with no thread, and the orchestrator checks each fix. **Note**: you are not sure; the human skims it, and nothing changes unless the human asks. **Decision**: taste or a trade-off; one thread each, with lettered choices, a recommendation and "Resolve with no reply = <letter>". (#46)
+- Post the index and "What I checked" as the review, the Fix and Note items as one comment with no threads, and each Decision as its own inline thread. (#46)
+- Number the items straight through all three buckets, so the human can reply "all agree except 14". Keep each item to one or two lines: what's wrong, where, and the fix. (#7)
 - Start each item with a topic label: **[wrong or contradictory]**, **[naming]**, **[writing]** or **[code]**. (#7)
-- A "Needs the human" item gives the context in plain words, says exactly what the choices are, and recommends one. Don't ask a question that the human can't answer without digging. (#7)
-- When the human says "don't care", the reviewer makes the call and lists it under High confidence next time. (#7)
+- A Decision gives the context in plain words, says exactly what the choices are, and recommends one. Don't ask a question that the human can't answer without digging. (#7)
+- When the human says "don't care", the reviewer makes the call and lists it as a Fix next time. (#7)
 - Explain technical terms in plain words, or leave them out. (#7)
-- Each item lives in one place only: an inline comment on a line, written in full, so every item has a comment the human can resolve. An item about the PR as a whole, the board, the issues or something missing goes on the line it would change, or on the closest related line in the PR. Never write an item in the summary. (#10, #23)
-- The summary is an index only: one short line per item (number, group, a few words, a link to its comment). (#10, #23)
-- The human replies in each item's comment. (#10, #23)
-- After fixes are pushed, reply on each item with "fixed in commit X" or "not fixed, because …", so nothing is lost when GitHub marks comments as outdated. (#10)
 - Give the context a reader needs: where a thing came from, a concrete example, and how it affects this project. If you can't give a real example, say so; never invent one. (#10)
 - One point per item. When an item has more than one part, list each part as its own bullet. (#10)
-- An obvious fix (like "pull before pushing") goes under High confidence as a plain statement, not a question. (#10)
+- An obvious fix (like "pull before pushing") is a Fix, written as a plain statement, not a question. (#10)
 - Write "R6 (next and previous)", not just "R6", and say which list "issue 5" belongs to. (#10)
-- Only the human resolves comments. The reviewer and the orchestrator never resolve them. Resolved means the discussion is over, not that the fix is made; the after-fix check covers every item, resolved or not, and reopens any that wasn't fixed. (#10)
+- Only the human resolves threads. The reviewer and the orchestrator never resolve them. (#10)
 - Read every page of comments (`gh api ... --paginate`). Before saying every comment is answered, count them. (#10)
-- A comment the human resolves with no reply means yes: the fix as written, or the recommendation. If a resolved comment has no fix or recommendation to accept, the orchestrator reopens it and asks. (#27)
+- A Decision thread the human resolves with no reply means yes to the recommendation. (#27)
 
 ## Names
 - One name per thing, everywhere: repo files, PR titles and descriptions, issue titles and bodies, the board and Claude artifacts. (#7)
