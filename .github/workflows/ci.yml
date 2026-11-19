@@ -6,6 +6,23 @@ on:
     branches: [main]
 
 jobs:
+  # Decides whether the branch (or the push to main) changes only docs: Markdown files and docs/.
+  # If so, the browser tests and Lighthouse are skipped; the quick tests always run.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.check.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Does this change only docs?
+        id: check
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: echo "docs_only=$(python3 scripts/docs-only.py "$BASE" "$HEAD")" >> "$GITHUB_OUTPUT"
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -22,8 +39,12 @@ jobs:
         run: npm test
       - name: Test the map script
         run: python3 scripts/test_map_artifact.py
+      - name: Test the docs-only check
+        run: python3 scripts/test_docs_only.py
 
   browsers:
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -41,6 +62,8 @@ jobs:
         run: npm run test:browser
 
   lighthouse:
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
