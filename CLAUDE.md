@@ -22,8 +22,10 @@
 - After each stage, add an entry to `docs/HISTORY.md`: the stage's decisions, surprises and changes of mind.
 - Before showing the human a markdown doc, check how GitHub displays it: `gh api markdown -F mode=gfm -F text=@<file>`.
 - In a public repo, never name anyone who isn't on the repo.
-- Claude uses the human's GitHub login, so GitHub can't tell who did what. End every PR description and comment Claude writes with its role, for example `— Claude (orchestrator)`. Skip this once Claude has its own GitHub account.
+- Claude Code works on GitHub as its own account, `hornof-claude`. Its token lives only in `.claude/settings.local.json`, never in a committed file. The orchestrator, builders and reviewers share that one account, so end every PR description and comment Claude writes with its role, for example `— Claude (orchestrator)`.
 - Problems with the apb process itself go on hornof/apb as one issue per problem, labeled `from-sketch-gallery`.
+- While an agent runs or a PR waits on the human or GitHub, apb's watcher runs (playbook, "While Claude waits"). The plugin's hook starts it and also watches the coordination issue named here, with a second watcher when that issue is in another repo. Every status, time or "still waiting" comes from a check in the same turn.
+- coordination: hornof/apb#25
 ## Project rules
 - 2026-11-10: More than 30 permission prompts in one session. Cause: `.claude/settings.local.json` set `defaultMode: acceptEdits`, overriding the user's auto mode. Fix: no `defaultMode` in repo files; shared rules live in `.claude/settings.json`.
 - 2026-11-13: The map artifact still showed a merged PR as waiting for review. Causes: the rule only said to add new pieces, the artifact and `docs/MAP.md` were edited by hand separately, and the artifact copied PR status. Fix: check the whole map at fixed moments, build the artifact from `docs/MAP.md`, link live lists instead of copying status.
