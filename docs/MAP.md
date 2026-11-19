@@ -21,7 +21,7 @@ flowchart LR
 | Board: [sketch-gallery](https://github.com/users/hornof/projects/2) | Progress: one issue for the PRD and one for the TDD, then one issue per piece of work from the TDD, plus one issue for any other change (like #9) | Every stage |
 | [Open PRs](https://github.com/hornof/sketch-gallery/pulls) | Work waiting for review or merge. GitHub keeps this list current. | Every stage |
 | Build issues: [#12 to #21](https://github.com/hornof/sketch-gallery/issues?q=is%3Aissue+%22TDD+item%22+in%3Atitle) | One issue per item in the TDD's section 12 | The build |
-| [Future work](https://github.com/hornof/sketch-gallery/issues?q=is%3Aissue+label%3A%22future+work%22) | Ideas for later, not part of the current build: issues labeled "future work", not on the board | Any time an idea comes up |
+| [Backlog](https://github.com/hornof/sketch-gallery/issues?q=is%3Aopen+label%3Abacklog) | Ideas for later, not part of the current build: issues labeled `backlog`, not on the board until chosen | Any time an idea comes up |
 | PRD input: [issue 2](https://github.com/hornof/sketch-gallery/issues/2) | The human's product details, which Claude used to write the first draft of the PRD. The PRD's issue on the board. | Start |
 | [docs/PRD.md](PRD.md) | The Product Requirements Doc: what the site does and for whom, with mockup screenshots in docs/mockups/ | Approved at gate 1 |
 | [docs/drawings.md](drawings.md) | The drawings: themes by year, samples, how they were made | PRD, then the build |
@@ -46,6 +46,9 @@ flowchart LR
 | [tests/fixtures/](../tests/fixtures/) | Test drawings, including one made like a sideways phone photo with a location, and the script that makes them. The tests build them with `--drawings tests/fixtures/drawings`. | Every PR |
 | [stryker.config.json](../stryker.config.json) | Settings for Stryker, which checks that the tests catch small deliberate bugs in the date, file-name, drawing, `./add` and `./import` code. Run by `npm run mutation`, not in the automatic tests. | When that code changes |
 | Process: [hornof/apb](https://github.com/hornof/apb) | The steps this project follows, installed as a Claude Code plugin | Every stage |
+| Coordination issue: [hornof/apb#25](https://github.com/hornof/apb/issues/25) | Where the orchestrator and the advisor talk, named on the `coordination:` line in `CLAUDE.md`. The apb plugin's watcher wakes the orchestrator when it changes. | Every stage |
+| Claude's GitHub account: [hornof-claude](https://github.com/hornof-claude) | The account Claude Code acts as on GitHub, a collaborator on hornof/apb and its board. Its token never expires. | Every stage |
+| `.claude/settings.local.json` in the local copy (git-ignored) | The token of Claude's GitHub account, and the git author that makes commits show the account | Every stage |
 
 ## Claude artifacts
 Web pages Claude makes and hosts on claude.ai. Each is private to its owner until shared. The kind is in parentheses after each name: a Design is a set of clickable screen mockups; a plain page is any other page.
